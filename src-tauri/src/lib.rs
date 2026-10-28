@@ -4,6 +4,7 @@ pub mod shell;
 use commands::color_icons::{generate_color_icon, list_preset_colors};
 use commands::folder_icon::{apply_icon, get_current_icon, restore_icon};
 use commands::icon_convert::convert_image_to_icon;
+use commands::icon_library::{download_and_convert_icon, fetch_collections, fetch_icons};
 use commands::undo::{
     apply_icon_tracked, get_undo_state, redo_last, restore_icon_tracked, undo_last,
     UndoManager, UndoManagerState,
@@ -28,6 +29,9 @@ pub fn run() {
             undo_last,
             redo_last,
             get_undo_state,
+            fetch_collections,
+            fetch_icons,
+            download_and_convert_icon,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

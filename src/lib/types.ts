@@ -1,5 +1,5 @@
 export interface PresetColor {
-  name: String;
+  name: string;
   hex: string;
   hue: number;
   saturation: number;
@@ -19,4 +19,43 @@ export interface UndoStateInfo {
   redo_count: number;
 }
 
-export type TabType = "presets" | "custom_color" | "import_image" | "history";
+export interface CollectionAuthor {
+  name: string;
+  url?: string;
+}
+
+export interface CollectionItem {
+  id: string;
+  title: string;
+  author?: CollectionAuthor;
+}
+
+export interface CollectionsResponse {
+  total: number;
+  collections: CollectionItem[];
+}
+
+export interface IconAsset {
+  size: number;
+  url: string;
+}
+
+export interface IconItem {
+  id: string;
+  name: string;
+  collectionId: string;
+  library?: string;
+  tags?: string[];
+  assets: IconAsset[];
+}
+
+export interface CatalogResponse {
+  offset: number;
+  limit: number;
+  total: number;
+  collections?: CollectionItem[];
+  items: IconItem[];
+}
+
+export type MainTabType = "library" | "presets" | "custom_color" | "import_image" | "history";
+export type TabType = MainTabType;

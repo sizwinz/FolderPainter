@@ -1,6 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { PresetColor, UndoEntry, UndoStateInfo } from "./types";
+import type {
+  CatalogResponse,
+  CollectionsResponse,
+  PresetColor,
+  UndoEntry,
+  UndoStateInfo,
+} from "./types";
 
 export async function selectFolderDialog(): Promise<string | null> {
   const selected = await open({
@@ -51,6 +57,28 @@ export async function generateColorIcon(
 export async function convertImageToIcon(imagePath: string): Promise<string> {
   return await invoke<string>("convert_image_to_icon", {
     imagePath,
+  });
+}
+
+export async function fetchCollections(): Promise<CollectionsResponse> {
+  return await invoke<CollectionsResponse>("fetch_collections");
+}
+
+export async function fetchIcons(
+  offset: number,
+  limit: number,
+  query?: string
+): Promise<CatalogResponse> {
+  return await invoke<CatalogResponse>("fetch_icons", {
+    offset,
+    limit,
+    query: query || null,
+  });
+}
+
+export async function downloadAndConvertIcon(url: string): Promise<string> {
+  return await invoke<string>("download_and_convert_icon", {
+    url,
   });
 }
 

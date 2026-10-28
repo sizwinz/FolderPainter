@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   applyIcon,
+  downloadAndConvertIcon,
   getCurrentIcon,
   getUndoState,
   redoLast,
@@ -19,7 +20,9 @@ export function useFolderIcon() {
   const [currentFolderIcon, setCurrentFolderIcon] = useState<string | null>(null);
   const [selectedIconPath, setSelectedIconPath] = useState<string | null>(null);
   const [previewColorHex, setPreviewColorHex] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [isPreparingIcon, setIsPreparingIcon] = useState(false);
   const [undoInfo, setUndoInfo] = useState<UndoStateInfo>({
     can_undo: false,
     can_redo: false,
@@ -33,7 +36,7 @@ export function useFolderIcon() {
       const state = await getUndoState();
       setUndoInfo(state);
     } catch {
-      // Ignored if initial check fails
+      // Ignored
     }
   };
 
@@ -63,11 +66,34 @@ export function useFolderIcon() {
     setStatusMessage(null);
   };
 
-  const selectIcon = (iconPath: string, colorHex?: string) => {
+  const selectColorPreset = (iconPath: string, colorHex: string) => {
     setSelectedIconPath(iconPath);
-    if (colorHex) {
-      setPreviewColorHex(colorHex);
+    setPreviewColorHex(colorHex);
+    setPreviewImageUrl(null);
+  };
+
+  const selectRemoteIcon = async (assetUrl: string) => {
+    setPreviewImageUrl(assetUrl);
+    setPreviewColorHex(null);
+    setIsPreparingIcon(true);
+
+    try {
+      const localIcoPath = await downloadAndConvertIcon(assetUrl);
+      setSelectedIconPath(localIcoPath);
+    } catch (err: unknown) {
+      setStatusMessage({
+        text: typeof err === "string" ? err : "Failed to prepare icon asset.",
+        type: "error",
+      });
+    } finally {
+      setIsPreparingIcon(false);
     }
+  };
+
+  const selectCustomImagePath = (iconPath: string) => {
+    setSelectedIconPath(iconPath);
+    setPreviewImageUrl(null);
+    setPreviewColorHex(null);
   };
 
   const apply = async () => {
@@ -185,11 +211,15 @@ export function useFolderIcon() {
     currentFolderIcon,
     selectedIconPath,
     previewColorHex,
+    previewImageUrl,
     isApplying,
+    isPreparingIcon,
     undoInfo,
     statusMessage,
     selectFolder,
-    selectIcon,
+    selectColorPreset,
+    selectRemoteIcon,
+    selectCustomImagePath,
     apply,
     restore,
     undo,
