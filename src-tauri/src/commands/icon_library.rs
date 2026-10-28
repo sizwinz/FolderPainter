@@ -86,12 +86,28 @@ pub fn fetch_icons(
     limit: u32,
     query: Option<String>,
 ) -> Result<CatalogResponse, String> {
-    let url = if let Some(q) = query.filter(|s| !s.trim().is_empty()) {
+    let cache_dir = get_cache_dir()?;
+    let query_ref = query.as_deref();
+
+    if let Some(cached) = load_catalog_cache(&cache_dir, offset, limit, query_ref) {
+        let file_path = cache_dir.join(get_catalog_cache_filename(offset, limit, query_ref));
+        if let Ok(metadata) = fs::metadata(&file_path) {
+            if let Ok(modified) = metadata.modified() {
+                if let Ok(elapsed) = modified.elapsed() {
+                    if elapsed.as_secs() < 86400 {
+                        return Ok(cached);
+                    }
+                }
+            }
+        }
+    }
+
+    let url = if let Some(q) = query_ref.filter(|s| !s.trim().is_empty()) {
         format!(
             "https://api.folderico.com/v1/icons/windows/win11?offset={}&limit={}&query={}",
             offset,
             limit,
-            urlencoding(&q)
+            urlencoding(q)
         )
     } else {
         format!(
@@ -100,17 +116,27 @@ pub fn fetch_icons(
         )
     };
 
-    let mut res = ureq::get(&url)
-        .call()
-        .map_err(|e| format!("Failed to fetch icon catalog: {}", e))?;
+    match ureq::get(&url).call() {
+        Ok(mut res) => {
+            if let Ok(body) = res.body_mut().read_to_string() {
+                if let Ok(catalog) = serde_json::from_str::<CatalogResponse>(&body) {
+                    let _ = save_catalog_cache(&cache_dir, offset, limit, query_ref, &catalog);
+                    return Ok(catalog);
+                }
+            }
+        }
+        Err(_) => {
+            if let Some(cached) = load_catalog_cache(&cache_dir, offset, limit, query_ref) {
+                return Ok(cached);
+            }
+        }
+    }
 
-    let body = res
-        .body_mut()
-        .read_to_string()
-        .map_err(|e| format!("Failed to read catalog response: {}", e))?;
+    if let Some(cached) = load_catalog_cache(&cache_dir, offset, limit, query_ref) {
+        return Ok(cached);
+    }
 
-    serde_json::from_str::<CatalogResponse>(&body)
-        .map_err(|e| format!("Failed to parse catalog JSON: {}", e))
+    Err("Failed to fetch icon catalog and no cached data is available".to_string())
 }
 
 #[tauri::command]
@@ -210,9 +236,84 @@ fn urlencoding(s: &str) -> String {
     out
 }
 
+fn get_catalog_cache_filename(offset: u32, limit: u32, query: Option<&str>) -> String {
+    let q = query.unwrap_or("").trim().to_lowercase();
+    let q_hash = simple_hash(&q);
+    format!("catalog_o{}_l{}_q{:x}.json", offset, limit, q_hash)
+}
+
+pub fn save_catalog_cache(
+    cache_dir: &std::path::Path,
+    offset: u32,
+    limit: u32,
+    query: Option<&str>,
+    catalog: &CatalogResponse,
+) -> Result<(), String> {
+    let file_path = cache_dir.join(get_catalog_cache_filename(offset, limit, query));
+    let json = serde_json::to_string(catalog).map_err(|e| e.to_string())?;
+    fs::write(&file_path, json).map_err(|e| e.to_string())
+}
+
+pub fn load_catalog_cache(
+    cache_dir: &std::path::Path,
+    offset: u32,
+    limit: u32,
+    query: Option<&str>,
+) -> Option<CatalogResponse> {
+    let file_path = cache_dir.join(get_catalog_cache_filename(offset, limit, query));
+    if !file_path.exists() {
+        return None;
+    }
+    let content = fs::read_to_string(&file_path).ok()?;
+    serde_json::from_str::<CatalogResponse>(&content).ok()
+}
+
+#[tauri::command]
+pub fn clear_icon_cache() -> Result<(), String> {
+    let cache_dir = get_cache_dir()?;
+    if cache_dir.exists() {
+        let _ = fs::remove_dir_all(&cache_dir);
+        let _ = fs::create_dir_all(&cache_dir);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_cached_catalog_roundtrip() {
+        let temp_dir = std::env::temp_dir().join("test_icon_catalog_cache");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let dummy = CatalogResponse {
+            offset: 0,
+            limit: 50,
+            total: 1,
+            collections: None,
+            items: vec![IconItem {
+                id: "test_1".to_string(),
+                name: "Test Icon".to_string(),
+                collection_id: "test_col".to_string(),
+                library: None,
+                tags: None,
+                assets: vec![],
+            }],
+        };
+
+        let save_res = save_catalog_cache(&temp_dir, 0, 50, Some("test"), &dummy);
+        assert!(save_res.is_ok());
+
+        let loaded = load_catalog_cache(&temp_dir, 0, 50, Some("test"));
+        assert!(loaded.is_some());
+        let loaded_catalog = loaded.unwrap();
+        assert_eq!(loaded_catalog.total, 1);
+        assert_eq!(loaded_catalog.items[0].name, "Test Icon");
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
 
     #[test]
     fn test_fetch_collections_returns_valid_catalog() {

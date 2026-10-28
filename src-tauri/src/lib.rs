@@ -4,7 +4,9 @@ pub mod shell;
 use commands::color_icons::{generate_color_icon, list_preset_colors};
 use commands::folder_icon::{apply_icon, get_current_icon, restore_icon};
 use commands::icon_convert::convert_image_to_icon;
-use commands::icon_library::{download_and_convert_icon, fetch_collections, fetch_icons};
+use commands::icon_library::{
+    clear_icon_cache, download_and_convert_icon, fetch_collections, fetch_icons,
+};
 use commands::undo::{
     UndoManager, UndoManagerState, apply_icon_tracked, get_undo_state, redo_last,
     restore_icon_tracked, undo_last,
@@ -35,6 +37,7 @@ pub fn run() {
             fetch_collections,
             fetch_icons,
             download_and_convert_icon,
+            clear_icon_cache,
             set_window_theme,
         ])
         .run(tauri::generate_context!())

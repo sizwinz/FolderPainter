@@ -82,6 +82,10 @@ export async function downloadAndConvertIcon(url: string): Promise<string> {
   });
 }
 
+export async function clearIconCache(): Promise<void> {
+  await invoke("clear_icon_cache");
+}
+
 export async function applyIcon(
   folderPath: string,
   iconPath: string
