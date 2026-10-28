@@ -1,7 +1,9 @@
 pub mod commands;
 pub mod shell;
 
-use commands::color_icons::{generate_color_icon, list_preset_colors};
+use commands::color_icons::{
+    generate_color_icon, get_default_folder_preview, list_preset_colors,
+};
 use commands::folder_icon::{apply_icon, get_current_icon, restore_icon};
 use commands::icon_convert::convert_image_to_icon;
 use commands::icon_library::{
@@ -28,6 +30,7 @@ pub fn run() {
             get_current_icon,
             list_preset_colors,
             generate_color_icon,
+            get_default_folder_preview,
             convert_image_to_icon,
             apply_icon_tracked,
             restore_icon_tracked,

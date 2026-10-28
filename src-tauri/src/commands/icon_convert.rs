@@ -1,11 +1,18 @@
-use crate::commands::color_icons::encode_multi_res_ico;
+use crate::commands::color_icons::{encode_multi_res_ico, encode_png_data_url};
 use image::RgbaImage;
 use image::imageops::FilterType;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConvertedIconResult {
+    pub icon_path: String,
+    pub preview_data_url: String,
+}
+
 #[tauri::command]
-pub fn convert_image_to_icon(image_path: String) -> Result<String, String> {
+pub fn convert_image_to_icon(image_path: String) -> Result<ConvertedIconResult, String> {
     let path = Path::new(&image_path);
     if !path.exists() {
         return Err(format!("Image file does not exist: {}", image_path));
@@ -66,7 +73,12 @@ pub fn convert_image_to_icon(image_path: String) -> Result<String, String> {
 
     fs::write(&out_path, ico_bytes).map_err(|e| format!("Failed to write icon file: {}", e))?;
 
-    Ok(out_path.to_string_lossy().to_string())
+    let preview_data_url = encode_png_data_url(&canvas)?;
+
+    Ok(ConvertedIconResult {
+        icon_path: out_path.to_string_lossy().to_string(),
+        preview_data_url,
+    })
 }
 
 pub fn get_custom_icons_dir() -> Result<PathBuf, String> {
@@ -107,10 +119,11 @@ mod tests {
         }
         sample_img.save(&png_path).unwrap();
 
-        let ico_path_str = convert_image_to_icon(png_path.to_str().unwrap().to_string()).unwrap();
-        let ico_path = Path::new(&ico_path_str);
+        let res = convert_image_to_icon(png_path.to_str().unwrap().to_string()).unwrap();
+        let ico_path = Path::new(&res.icon_path);
 
         assert!(ico_path.exists(), "Converted icon should exist");
+        assert!(res.preview_data_url.starts_with("data:image/png;base64,"));
         let bytes = fs::read(ico_path).unwrap();
         assert!(bytes.len() > 100, "ICO file should contain icon data");
         assert_eq!(

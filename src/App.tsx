@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Folder,
   FolderOpen,
   Check,
   RotateCcw,
@@ -23,7 +22,7 @@ import {
 } from "lucide-react";
 import logoUrl from "./assets/logo.png";
 import { IconLibraryTab } from "./components/IconLibraryTab";
-import { IconGrid } from "./components/IconGrid";
+import { IconGrid, WindowsFolderIcon } from "./components/IconGrid";
 import { ColorWheel } from "./components/ColorWheel";
 import { CustomIconTab } from "./components/CustomIconTab";
 import { HistoryTab } from "./components/HistoryTab";
@@ -38,6 +37,15 @@ export default function App() {
   const updater = useUpdater();
   const [currentTab, setCurrentTab] = useState<MainTabType>("library");
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Disable default browser right-click context menu
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("contextmenu", handleContextMenu);
+    return () => window.removeEventListener("contextmenu", handleContextMenu);
+  }, []);
 
   const {
     selectedFolder,
@@ -94,10 +102,13 @@ export default function App() {
   const canRestore = Boolean(selectedFolder && !isApplying);
 
   return (
-    <div className="flex h-screen w-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased overflow-hidden select-none">
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      className="flex h-screen w-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased overflow-hidden select-none"
+    >
       {/* Left Workspace Panel */}
-      <aside className="w-72 shrink-0 h-screen flex flex-col justify-between border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/50 p-4">
-        <div className="space-y-3.5">
+      <aside className="w-64 lg:w-72 shrink-0 h-screen flex flex-col justify-between border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/50 p-3 lg:p-4 transition-all">
+        <div className="space-y-3">
           {/* App Brand Header */}
           <div className="flex items-center gap-2.5 px-1 pt-0.5 pb-1">
             <img
@@ -116,7 +127,7 @@ export default function App() {
           </div>
 
           {/* Big Folder Preview Box */}
-          <div className="w-full h-44 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-3 shadow-xs">
+          <div className="w-full h-36 lg:h-44 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-3 shadow-xs">
             {isPreparingIcon ? (
               <div className="flex flex-col items-center gap-2 text-zinc-400">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -125,19 +136,19 @@ export default function App() {
             ) : previewImageUrl ? (
               <img
                 src={previewImageUrl}
-                alt="Selected icon"
-                className="w-28 h-28 object-contain drop-shadow-md transition-transform hover:scale-105"
+                alt="Selected folder preview"
+                className="w-22 h-22 lg:w-28 lg:h-28 object-contain drop-shadow-md transition-transform hover:scale-105"
               />
             ) : previewColorHex ? (
-              <Folder
-                className="w-28 h-28 drop-shadow-md transition-colors"
-                style={{
-                  fill: previewColorHex,
-                  color: previewColorHex,
-                }}
+              <WindowsFolderIcon
+                color={previewColorHex}
+                className="w-22 h-22 lg:w-28 lg:h-28 drop-shadow-md transition-transform hover:scale-105"
               />
             ) : (
-              <Folder className="w-28 h-28 text-amber-400 fill-amber-400 drop-shadow-md" />
+              <WindowsFolderIcon
+                color="#FDD835"
+                className="w-22 h-22 lg:w-28 lg:h-28 drop-shadow-md transition-transform hover:scale-105"
+              />
             )}
             <div className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-semibold mt-1">
               {previewImageUrl || previewColorHex ? "Custom Selection" : "Standard Folder"}
@@ -263,88 +274,92 @@ export default function App() {
 
       {/* Right Content Area */}
       <main className="flex-1 flex flex-col h-screen min-w-0 bg-white dark:bg-zinc-950">
-        {/* Top Header with Segmented Navigation and Theme Toggle */}
-        <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 px-5 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xs">
-          {/* Segmented Tab Controls */}
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
+        {/* Top Header with Responsive Segmented Navigation and Theme Toggle */}
+        <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-5 flex items-center justify-between shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xs gap-2 min-w-0">
+          {/* Segmented Tab Controls (Horizontally scrollable without scrollbars) */}
+          <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800 overflow-x-auto no-scrollbar shrink min-w-0">
             <button
               onClick={() => setCurrentTab("library")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 currentTab === "library"
                   ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Icon Library</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Icon Library</span>
+              <span className="md:hidden">Icons</span>
             </button>
 
             <button
               onClick={() => setCurrentTab("presets")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 currentTab === "presets"
                   ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
-              <Palette className="w-3.5 h-3.5" />
-              <span>Color Presets</span>
+              <Palette className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Color Presets</span>
+              <span className="md:hidden">Colors</span>
             </button>
 
             <button
               onClick={() => setCurrentTab("custom_color")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 currentTab === "custom_color"
                   ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Custom HSL</span>
+              <Sliders className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Custom HSL</span>
+              <span className="md:hidden">Custom</span>
             </button>
 
             <button
               onClick={() => setCurrentTab("import_image")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 currentTab === "import_image"
                   ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
-              <Image className="w-3.5 h-3.5" />
-              <span>Import Image</span>
+              <Image className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Import Image</span>
+              <span className="md:hidden">Import</span>
             </button>
 
             <button
               onClick={() => setCurrentTab("history")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 currentTab === "history"
                   ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
-              <History className="w-3.5 h-3.5" />
+              <History className="w-3.5 h-3.5 shrink-0" />
               <span>History</span>
             </button>
           </div>
 
           {/* Action Buttons: Updates + Theme */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => updater.checkForUpdates(true)}
               disabled={updater.status.state === "checking" || updater.status.state === "downloading"}
               title="Check for application updates"
-              className="px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 disabled:opacity-50"
+              className="px-2 sm:px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 disabled:opacity-50"
             >
               {updater.status.state === "checking" ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
-                  <span>Checking...</span>
+                  <span className="hidden sm:inline">Checking...</span>
                 </>
               ) : (
                 <>
                   <ArrowDownCircle className="w-3.5 h-3.5" />
-                  <span>Updates</span>
+                  <span className="hidden sm:inline">Updates</span>
                 </>
               )}
             </button>
@@ -352,7 +367,7 @@ export default function App() {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800"
+              className="p-1.5 sm:p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800"
               title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             >
               {theme === "dark" ? (

@@ -6,6 +6,16 @@ export interface PresetColor {
   lightness: number;
 }
 
+export interface GeneratedIconResult {
+  icon_path: string;
+  preview_data_url: string;
+}
+
+export interface ConvertedIconResult {
+  icon_path: string;
+  preview_data_url: string;
+}
+
 export interface UndoEntry {
   folder_path: string;
   previous_icon: string | null;

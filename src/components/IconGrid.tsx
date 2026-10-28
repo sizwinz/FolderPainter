@@ -1,11 +1,54 @@
 import React, { useEffect, useState } from "react";
-import { Check, Folder, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { generateColorIcon, listPresetColors } from "../lib/invoke";
 import type { PresetColor } from "../lib/types";
 
 interface IconGridProps {
   selectedIconPath: string | null;
-  onSelectIcon: (iconPath: string, hex: string) => void;
+  onSelectIcon: (iconPath: string, previewUrl: string, hex: string) => void;
+}
+
+export function WindowsFolderIcon({
+  color,
+  className = "w-7 h-7",
+}: {
+  color: string;
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Back tab and back plate */}
+      <path
+        d="M4 11C4 9.34315 5.34315 8 7 8H19C20.6569 8 22 9.34315 22 11V13H41C42.6569 13 44 14.3431 44 16V36C44 37.6569 42.6569 39 41 39H7C5.34315 39 4 37.6569 4 36V11Z"
+        fill={color}
+        fillOpacity="0.82"
+      />
+      {/* Interior White Paper Insert */}
+      <rect x="9" y="11" width="30" height="18" rx="2" fill="#FFFFFF" />
+      <path
+        d="M14 15H25M14 18H32M14 21H28"
+        stroke="#CBD5E1"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      {/* Front Folder Flap */}
+      <rect x="4" y="16" width="40" height="23" rx="4" fill={color} />
+      <rect
+        x="4"
+        y="16"
+        width="40"
+        height="23"
+        rx="4"
+        fill="black"
+        fillOpacity="0.08"
+      />
+    </svg>
+  );
 }
 
 export const IconGrid: React.FC<IconGridProps> = ({
@@ -24,12 +67,12 @@ export const IconGrid: React.FC<IconGridProps> = ({
   const handleSelectPreset = async (preset: PresetColor) => {
     setLoadingPreset(preset.hex);
     try {
-      const iconPath = await generateColorIcon(
+      const result = await generateColorIcon(
         preset.hue,
         preset.saturation,
         preset.lightness
       );
-      onSelectIcon(iconPath, preset.hex);
+      onSelectIcon(result.icon_path, result.preview_data_url, preset.hex);
     } finally {
       setLoadingPreset(null);
     }
@@ -37,18 +80,16 @@ export const IconGrid: React.FC<IconGridProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Color Presets
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Select a classic Windows-styled folder color to apply instantly.
-          </p>
-        </div>
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Color Presets
+        </h2>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Select a classic Windows-styled folder color to apply instantly.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
         {presets.map((preset) => {
           const isLoading = loadingPreset === preset.hex;
           const isSelected =
@@ -77,13 +118,7 @@ export const IconGrid: React.FC<IconGridProps> = ({
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                 ) : (
-                  <Folder
-                    className="w-6 h-6 transition-colors"
-                    style={{
-                      fill: preset.hex,
-                      color: preset.hex,
-                    }}
-                  />
+                  <WindowsFolderIcon color={preset.hex} className="w-7 h-7 drop-shadow-xs" />
                 )}
               </div>
 

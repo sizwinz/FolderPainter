@@ -265,7 +265,7 @@ export const IconLibraryTab: React.FC<IconLibraryTabProps> = ({
             </div>
 
             {/* Icon Tiles Grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-2">
               {group.items.map((item) => {
                 const asset256 = item.assets.find((a) => a.size === 256) || item.assets[0];
                 const isSelected = selectedImageUrl === asset256?.url;

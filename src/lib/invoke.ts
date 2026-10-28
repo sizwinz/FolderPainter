@@ -3,6 +3,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type {
   CatalogResponse,
   CollectionsResponse,
+  ConvertedIconResult,
+  GeneratedIconResult,
   PresetColor,
   UndoEntry,
   UndoStateInfo,
@@ -42,20 +44,24 @@ export async function listPresetColors(): Promise<PresetColor[]> {
   return await invoke<PresetColor[]>("list_preset_colors");
 }
 
+export async function getDefaultFolderPreview(): Promise<string> {
+  return await invoke<string>("get_default_folder_preview");
+}
+
 export async function generateColorIcon(
   hue: number,
   saturation: number,
   lightness: number
-): Promise<string> {
-  return await invoke<string>("generate_color_icon", {
+): Promise<GeneratedIconResult> {
+  return await invoke<GeneratedIconResult>("generate_color_icon", {
     hue,
     saturation,
     lightness,
   });
 }
 
-export async function convertImageToIcon(imagePath: string): Promise<string> {
-  return await invoke<string>("convert_image_to_icon", {
+export async function convertImageToIcon(imagePath: string): Promise<ConvertedIconResult> {
+  return await invoke<ConvertedIconResult>("convert_image_to_icon", {
     imagePath,
   });
 }

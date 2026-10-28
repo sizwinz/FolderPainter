@@ -3,6 +3,7 @@ import {
   applyIcon,
   downloadAndConvertIcon,
   getCurrentIcon,
+  getDefaultFolderPreview,
   getUndoState,
   redoLast,
   restoreIcon,
@@ -51,6 +52,11 @@ export function useFolderIcon() {
 
   useEffect(() => {
     refreshUndoState();
+    getDefaultFolderPreview()
+      .then((url) => {
+        setPreviewImageUrl((prev) => prev || url);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -66,10 +72,10 @@ export function useFolderIcon() {
     setStatusMessage(null);
   };
 
-  const selectColorPreset = (iconPath: string, colorHex: string) => {
+  const selectColorPreset = (iconPath: string, previewUrl: string, colorHex?: string) => {
     setSelectedIconPath(iconPath);
-    setPreviewColorHex(colorHex);
-    setPreviewImageUrl(null);
+    setPreviewImageUrl(previewUrl);
+    setPreviewColorHex(colorHex || null);
   };
 
   const selectRemoteIcon = async (assetUrl: string) => {
@@ -90,9 +96,9 @@ export function useFolderIcon() {
     }
   };
 
-  const selectCustomImagePath = (iconPath: string) => {
+  const selectCustomImagePath = (iconPath: string, previewUrl: string) => {
     setSelectedIconPath(iconPath);
-    setPreviewImageUrl(null);
+    setPreviewImageUrl(previewUrl);
     setPreviewColorHex(null);
   };
 

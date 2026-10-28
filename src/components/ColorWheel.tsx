@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Folder, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { generateColorIcon } from "../lib/invoke";
+import { WindowsFolderIcon } from "./IconGrid";
 
 interface ColorWheelProps {
-  onSelectIcon: (iconPath: string, hex: string) => void;
+  onSelectIcon: (iconPath: string, previewUrl: string, hex: string) => void;
 }
 
 function hslToHex(h: number, s: number, l: number): string {
@@ -30,12 +31,12 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const iconPath = await generateColorIcon(
+      const result = await generateColorIcon(
         hue,
         saturation / 100,
         lightness / 100
       );
-      onSelectIcon(iconPath, hexColor);
+      onSelectIcon(result.icon_path, result.preview_data_url, hexColor);
     } finally {
       setIsGenerating(false);
     }
@@ -59,13 +60,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
             className="w-24 h-24 rounded-2xl flex items-center justify-center border border-zinc-200/60 dark:border-zinc-800 shadow-inner"
             style={{ backgroundColor: `${hexColor}15` }}
           >
-            <Folder
-              className="w-14 h-14 transition-colors"
-              style={{
-                fill: hexColor,
-                color: hexColor,
-              }}
-            />
+            <WindowsFolderIcon color={hexColor} className="w-14 h-14 drop-shadow-md" />
           </div>
           <span className="text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300">
             {hexColor}

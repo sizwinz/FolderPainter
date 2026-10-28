@@ -3,7 +3,7 @@ import { Upload, Loader2, CheckCircle2 } from "lucide-react";
 import { convertImageToIcon, selectImageDialog } from "../lib/invoke";
 
 interface CustomIconTabProps {
-  onSelectIcon: (iconPath: string) => void;
+  onSelectIcon: (iconPath: string, previewUrl: string) => void;
 }
 
 export const CustomIconTab: React.FC<CustomIconTabProps> = ({ onSelectIcon }) => {
@@ -14,9 +14,9 @@ export const CustomIconTab: React.FC<CustomIconTabProps> = ({ onSelectIcon }) =>
   const processFile = async (filePath: string) => {
     setIsConverting(true);
     try {
-      const icoPath = await convertImageToIcon(filePath);
-      setConvertedPath(icoPath);
-      onSelectIcon(icoPath);
+      const result = await convertImageToIcon(filePath);
+      setConvertedPath(result.icon_path);
+      onSelectIcon(result.icon_path, result.preview_data_url);
     } catch (err) {
       console.error(err);
     } finally {

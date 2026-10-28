@@ -110,8 +110,24 @@ pub fn list_preset_colors() -> Vec<PresetColor> {
     ]
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneratedIconResult {
+    pub icon_path: String,
+    pub preview_data_url: String,
+}
+
 #[tauri::command]
-pub fn generate_color_icon(hue: f32, saturation: f32, lightness: f32) -> Result<String, String> {
+pub fn get_default_folder_preview() -> Result<String, String> {
+    let img = render_folder_canvas(48.0, 0.98, 0.60);
+    encode_png_data_url(&img)
+}
+
+#[tauri::command]
+pub fn generate_color_icon(
+    hue: f32,
+    saturation: f32,
+    lightness: f32,
+) -> Result<GeneratedIconResult, String> {
     let base_dir = get_icons_cache_dir()?;
     let h_int = (hue.clamp(0.0, 360.0) * 10.0).round() as u32;
     let s_int = (saturation.clamp(0.0, 1.0) * 100.0).round() as u32;
@@ -120,17 +136,20 @@ pub fn generate_color_icon(hue: f32, saturation: f32, lightness: f32) -> Result<
     let filename = format!("folder_h{}_s{}_l{}.ico", h_int, s_int, l_int);
     let output_path = base_dir.join(filename);
 
-    if output_path.exists() {
-        return Ok(output_path.to_string_lossy().to_string());
+    let img256 = render_folder_canvas(hue, saturation, lightness);
+    let preview_data_url = encode_png_data_url(&img256)?;
+
+    if !output_path.exists() {
+        let ico_bytes = encode_multi_res_ico(&img256)
+            .map_err(|e| format!("Failed to encode ICO file: {}", e))?;
+        fs::write(&output_path, ico_bytes)
+            .map_err(|e| format!("Failed to write icon file: {}", e))?;
     }
 
-    let img256 = render_folder_canvas(hue, saturation, lightness);
-    let ico_bytes =
-        encode_multi_res_ico(&img256).map_err(|e| format!("Failed to encode ICO file: {}", e))?;
-
-    fs::write(&output_path, ico_bytes).map_err(|e| format!("Failed to write icon file: {}", e))?;
-
-    Ok(output_path.to_string_lossy().to_string())
+    Ok(GeneratedIconResult {
+        icon_path: output_path.to_string_lossy().to_string(),
+        preview_data_url,
+    })
 }
 
 pub fn get_icons_cache_dir() -> Result<PathBuf, String> {
@@ -353,6 +372,49 @@ pub fn encode_multi_res_ico(source_256: &RgbaImage) -> Result<Vec<u8>, image::Im
     Ok(ico)
 }
 
+const BASE64_ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+pub fn base64_encode(bytes: &[u8]) -> String {
+    let mut out = String::with_capacity((bytes.len() + 2) / 3 * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0];
+        let b1 = if chunk.len() > 1 { chunk[1] } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] } else { 0 };
+
+        out.push(BASE64_ALPHABET[(b0 >> 2) as usize] as char);
+        out.push(BASE64_ALPHABET[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);
+
+        if chunk.len() > 1 {
+            out.push(BASE64_ALPHABET[(((b1 & 0x0F) << 2) | (b2 >> 6)) as usize] as char);
+        } else {
+            out.push('=');
+        }
+
+        if chunk.len() > 2 {
+            out.push(BASE64_ALPHABET[(b2 & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
+}
+
+pub fn encode_png_data_url(img: &RgbaImage) -> Result<String, String> {
+    let mut buf = Vec::new();
+    let encoder = PngEncoder::new(&mut buf);
+    encoder
+        .write_image(
+            img.as_raw(),
+            img.width(),
+            img.height(),
+            ExtendedColorType::Rgba8,
+        )
+        .map_err(|e| format!("PNG encode error: {}", e))?;
+
+    let b64 = base64_encode(&buf);
+    Ok(format!("data:image/png;base64,{}", b64))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,11 +422,20 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    fn test_encode_png_data_url_valid() {
+        let img = render_folder_canvas(48.0, 0.98, 0.60);
+        let data_url = encode_png_data_url(&img).unwrap();
+        assert!(data_url.starts_with("data:image/png;base64,"));
+        assert!(data_url.len() > 100);
+    }
+
+    #[test]
     fn test_generate_color_icon_produces_valid_ico() {
-        let icon_path_str = generate_color_icon(210.0, 0.85, 0.55).unwrap();
-        let icon_path = Path::new(&icon_path_str);
+        let res = generate_color_icon(210.0, 0.85, 0.55).unwrap();
+        let icon_path = Path::new(&res.icon_path);
 
         assert!(icon_path.exists(), "Generated icon file should exist");
+        assert!(res.preview_data_url.starts_with("data:image/png;base64,"));
         let bytes = fs::read(icon_path).unwrap();
         assert!(bytes.len() > 100, "ICO file should contain icon data");
         assert_eq!(
