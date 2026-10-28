@@ -18,7 +18,10 @@ import {
   Sliders,
   Image,
   History,
+  ArrowDownCircle,
+  Download,
 } from "lucide-react";
+import logoUrl from "./assets/logo.png";
 import { IconLibraryTab } from "./components/IconLibraryTab";
 import { IconGrid } from "./components/IconGrid";
 import { ColorWheel } from "./components/ColorWheel";
@@ -26,11 +29,13 @@ import { CustomIconTab } from "./components/CustomIconTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { useTheme } from "./hooks/useTheme";
 import { useFolderIcon } from "./hooks/useFolderIcon";
+import { useUpdater } from "./hooks/useUpdater";
 import { selectFolderDialog } from "./lib/invoke";
 import type { MainTabType } from "./lib/types";
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
+  const updater = useUpdater();
   const [currentTab, setCurrentTab] = useState<MainTabType>("library");
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -92,7 +97,24 @@ export default function App() {
     <div className="flex h-screen w-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased overflow-hidden select-none">
       {/* Left Workspace Panel */}
       <aside className="w-72 shrink-0 h-screen flex flex-col justify-between border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/50 p-4">
-        <div className="space-y-4">
+        <div className="space-y-3.5">
+          {/* App Brand Header */}
+          <div className="flex items-center gap-2.5 px-1 pt-0.5 pb-1">
+            <img
+              src={logoUrl}
+              alt="FolderPainter"
+              className="w-8 h-8 object-contain drop-shadow-sm select-none"
+            />
+            <div>
+              <h1 className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+                FolderPainter
+              </h1>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                Windows Icon Studio
+              </p>
+            </div>
+          </div>
+
           {/* Big Folder Preview Box */}
           <div className="w-full h-44 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-3 shadow-xs">
             {isPreparingIcon ? (
@@ -306,19 +328,122 @@ export default function App() {
             </button>
           </div>
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800"
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-zinc-600" />
-            )}
-          </button>
+          {/* Action Buttons: Updates + Theme */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => updater.checkForUpdates(true)}
+              disabled={updater.status.state === "checking" || updater.status.state === "downloading"}
+              title="Check for application updates"
+              className="px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {updater.status.state === "checking" ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                  <span>Checking...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDownCircle className="w-3.5 h-3.5" />
+                  <span>Updates</span>
+                </>
+              )}
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800"
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-zinc-600" />
+              )}
+            </button>
+          </div>
         </header>
+
+        {/* Update Notification Banners */}
+        {updater.status.state === "available" && (
+          <div className="mx-5 mt-3 p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <Download className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                  Version {updater.status.version} is available
+                </p>
+                <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                  {updater.status.body || "New features and enhancements are ready."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={updater.downloadAndInstallUpdate}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                Download & Install
+              </button>
+              <button
+                onClick={updater.dismiss}
+                className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {updater.status.state === "downloading" && (
+          <div className="mx-5 mt-3 p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center gap-3 shadow-xs">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">
+                <span>Downloading update...</span>
+                {updater.status.total ? (
+                  <span>
+                    {Math.round(((updater.status.downloaded ?? 0) / updater.status.total) * 100)}%
+                  </span>
+                ) : null}
+              </div>
+              <div className="w-full bg-blue-200 dark:bg-blue-900/60 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-blue-600 h-full rounded-full transition-all duration-200"
+                  style={{
+                    width: updater.status.total
+                      ? `${Math.round(((updater.status.downloaded ?? 0) / updater.status.total) * 100)}%`
+                      : "40%",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {updater.status.state === "upToDate" && (
+          <div className="mx-5 mt-3 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>FolderPainter is up to date (v0.1.0).</span>
+            </div>
+            <button onClick={updater.dismiss} className="text-emerald-600 hover:text-emerald-800">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {updater.status.state === "error" && (
+          <div className="mx-5 mt-3 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between text-xs text-rose-800 dark:text-rose-300">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Update check: {updater.status.error || "Unable to reach release server"}</span>
+            </div>
+            <button onClick={updater.dismiss} className="text-rose-600 hover:text-rose-800">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Tab Content Body */}
         <section className="flex-1 overflow-hidden p-5">

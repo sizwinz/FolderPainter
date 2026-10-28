@@ -3,12 +3,12 @@ use std::io::Result;
 use std::path::Path;
 
 #[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
 use windows::Win32::Storage::FileSystem::{
-    GetFileAttributesW, SetFileAttributesW, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_NORMAL,
-    FILE_ATTRIBUTE_SYSTEM, INVALID_FILE_ATTRIBUTES,
+    FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_SYSTEM, GetFileAttributesW,
+    INVALID_FILE_ATTRIBUTES, SetFileAttributesW,
 };
+#[cfg(windows)]
+use windows::core::HSTRING;
 
 pub fn read_icon_resource(folder: &Path) -> Result<Option<String>> {
     let ini_path = folder.join("desktop.ini");
@@ -153,7 +153,9 @@ pub fn remove_icon_resource(folder: &Path) -> Result<bool> {
 
     let non_empty_lines: Vec<&String> = lines.iter().filter(|l| !l.trim().is_empty()).collect();
     let only_shell_header = non_empty_lines.len() == 1
-        && non_empty_lines[0].trim().eq_ignore_ascii_case("[.ShellClassInfo]");
+        && non_empty_lines[0]
+            .trim()
+            .eq_ignore_ascii_case("[.ShellClassInfo]");
 
     if non_empty_lines.is_empty() || only_shell_header {
         let _ = fs::remove_file(&ini_path);
@@ -210,9 +212,18 @@ mod tests {
         write_icon_resource(&temp_dir, r"C:\Icons\custom.ico").unwrap();
 
         let content = fs::read_to_string(&ini_path).unwrap();
-        assert!(content.contains("[ViewState]"), "ViewState section should be preserved");
-        assert!(content.contains("[.ShellClassInfo]"), ".ShellClassInfo section should be added");
-        assert!(content.contains(r"IconResource=C:\Icons\custom.ico,0"), "IconResource should be set");
+        assert!(
+            content.contains("[ViewState]"),
+            "ViewState section should be preserved"
+        );
+        assert!(
+            content.contains("[.ShellClassInfo]"),
+            ".ShellClassInfo section should be added"
+        );
+        assert!(
+            content.contains(r"IconResource=C:\Icons\custom.ico,0"),
+            "IconResource should be set"
+        );
 
         let current = read_icon_resource(&temp_dir).unwrap();
         assert_eq!(current, Some(r"C:\Icons\custom.ico".to_string()));

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { setWindowTheme } from "../lib/invoke";
 
 export type Theme = "dark" | "light";
 
@@ -19,6 +20,7 @@ export function useTheme() {
       root.classList.remove("dark");
     }
     localStorage.setItem("folderpainter_theme", theme);
+    setWindowTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => {

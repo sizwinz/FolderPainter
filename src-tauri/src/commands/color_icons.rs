@@ -1,5 +1,5 @@
 use image::imageops::FilterType;
-use image::{codecs::png::PngEncoder, ExtendedColorType, ImageEncoder, Rgba, RgbaImage};
+use image::{ExtendedColorType, ImageEncoder, Rgba, RgbaImage, codecs::png::PngEncoder};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -125,11 +125,10 @@ pub fn generate_color_icon(hue: f32, saturation: f32, lightness: f32) -> Result<
     }
 
     let img256 = render_folder_canvas(hue, saturation, lightness);
-    let ico_bytes = encode_multi_res_ico(&img256)
-        .map_err(|e| format!("Failed to encode ICO file: {}", e))?;
+    let ico_bytes =
+        encode_multi_res_ico(&img256).map_err(|e| format!("Failed to encode ICO file: {}", e))?;
 
-    fs::write(&output_path, ico_bytes)
-        .map_err(|e| format!("Failed to write icon file: {}", e))?;
+    fs::write(&output_path, ico_bytes).map_err(|e| format!("Failed to write icon file: {}", e))?;
 
     Ok(output_path.to_string_lossy().to_string())
 }
@@ -141,7 +140,8 @@ pub fn get_icons_cache_dir() -> Result<PathBuf, String> {
         .join("icons");
 
     if !base.exists() {
-        fs::create_dir_all(&base).map_err(|e| format!("Failed to create icons directory: {}", e))?;
+        fs::create_dir_all(&base)
+            .map_err(|e| format!("Failed to create icons directory: {}", e))?;
     }
     Ok(base)
 }
@@ -197,7 +197,11 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
             let in_back = px >= 24.0 && px <= 232.0 && py >= 56.0 && py <= 216.0;
 
             if in_tab || in_back {
-                let color = if in_tab && py < 56.0 { tab_rgb } else { back_rgb };
+                let color = if in_tab && py < 56.0 {
+                    tab_rgb
+                } else {
+                    back_rgb
+                };
                 img.put_pixel(x, y, Rgba([color.0, color.1, color.2, 255]));
             }
         }
@@ -234,7 +238,8 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
             let px = x as f32;
             let py = y as f32;
 
-            let in_bounds = px >= front_left && px <= front_right && py >= front_top && py <= front_bottom;
+            let in_bounds =
+                px >= front_left && px <= front_right && py >= front_top && py <= front_bottom;
             if !in_bounds {
                 continue;
             }
@@ -242,8 +247,10 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
             let mut corner_dist_sq = 0.0;
             let is_top_left = px < front_left + corner_radius && py < front_top + corner_radius;
             let is_top_right = px > front_right - corner_radius && py < front_top + corner_radius;
-            let is_bottom_left = px < front_left + corner_radius && py > front_bottom - corner_radius;
-            let is_bottom_right = px > front_right - corner_radius && py > front_bottom - corner_radius;
+            let is_bottom_left =
+                px < front_left + corner_radius && py > front_bottom - corner_radius;
+            let is_bottom_right =
+                px > front_right - corner_radius && py > front_bottom - corner_radius;
 
             if is_top_left {
                 let dx = px - (front_left + corner_radius);
@@ -300,12 +307,7 @@ pub fn encode_multi_res_ico(source_256: &RgbaImage) -> Result<Vec<u8>, image::Im
 
         let mut buf = Vec::new();
         let encoder = PngEncoder::new(&mut buf);
-        encoder.write_image(
-            resized.as_raw(),
-            size,
-            size,
-            ExtendedColorType::Rgba8,
-        )?;
+        encoder.write_image(resized.as_raw(), size, size, ExtendedColorType::Rgba8)?;
 
         png_buffers.push((size, buf));
     }
@@ -365,7 +367,11 @@ mod tests {
         assert!(icon_path.exists(), "Generated icon file should exist");
         let bytes = fs::read(icon_path).unwrap();
         assert!(bytes.len() > 100, "ICO file should contain icon data");
-        assert_eq!(&bytes[0..4], &[0x00, 0x00, 0x01, 0x00], "Should have valid ICO header");
+        assert_eq!(
+            &bytes[0..4],
+            &[0x00, 0x00, 0x01, 0x00],
+            "Should have valid ICO header"
+        );
 
         let presets = list_preset_colors();
         assert_eq!(presets.len(), 13, "Should have 13 preset colors");

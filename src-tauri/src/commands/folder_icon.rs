@@ -1,5 +1,5 @@
-use std::path::Path;
 use crate::shell::{attributes, desktop_ini, notify};
+use std::path::Path;
 
 #[tauri::command]
 pub fn apply_icon(folder_path: String, icon_path: String) -> Result<(), String> {

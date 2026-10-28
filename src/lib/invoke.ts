@@ -117,3 +117,11 @@ export async function redoLast(): Promise<UndoEntry | null> {
 export async function getUndoState(): Promise<UndoStateInfo> {
   return await invoke<UndoStateInfo>("get_undo_state");
 }
+
+export async function setWindowTheme(theme: "dark" | "light"): Promise<void> {
+  try {
+    await invoke("set_window_theme", { theme });
+  } catch (err) {
+    console.warn("Failed to set window theme:", err);
+  }
+}

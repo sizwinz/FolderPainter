@@ -1,4 +1,8 @@
-# Logs
+# Target & Keys
+src-tauri/target
+src-tauri/*.key
+*.key
+.planning/
 logs
 *.log
 npm-debug.log*

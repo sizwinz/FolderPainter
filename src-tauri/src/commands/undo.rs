@@ -96,8 +96,7 @@ impl UndoManager {
         if let Some(path) = Self::get_history_file() {
             let json = serde_json::to_string_pretty(self)
                 .map_err(|e| format!("Failed to serialize history: {}", e))?;
-            fs::write(path, json)
-                .map_err(|e| format!("Failed to write history file: {}", e))?;
+            fs::write(path, json).map_err(|e| format!("Failed to write history file: {}", e))?;
         }
         Ok(())
     }

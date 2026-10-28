@@ -1,6 +1,6 @@
 use crate::commands::color_icons::encode_multi_res_ico;
-use image::imageops::FilterType;
 use image::RgbaImage;
+use image::imageops::FilterType;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -64,8 +64,7 @@ pub fn convert_image_to_icon(image_path: String) -> Result<String, String> {
     let ico_bytes = encode_multi_res_ico(&canvas)
         .map_err(|e| format!("Failed to encode converted icon: {}", e))?;
 
-    fs::write(&out_path, ico_bytes)
-        .map_err(|e| format!("Failed to write icon file: {}", e))?;
+    fs::write(&out_path, ico_bytes).map_err(|e| format!("Failed to write icon file: {}", e))?;
 
     Ok(out_path.to_string_lossy().to_string())
 }
@@ -77,7 +76,8 @@ pub fn get_custom_icons_dir() -> Result<PathBuf, String> {
         .join("custom_icons");
 
     if !base.exists() {
-        fs::create_dir_all(&base).map_err(|e| format!("Failed to create custom icons directory: {}", e))?;
+        fs::create_dir_all(&base)
+            .map_err(|e| format!("Failed to create custom icons directory: {}", e))?;
     }
     Ok(base)
 }
@@ -113,7 +113,11 @@ mod tests {
         assert!(ico_path.exists(), "Converted icon should exist");
         let bytes = fs::read(ico_path).unwrap();
         assert!(bytes.len() > 100, "ICO file should contain icon data");
-        assert_eq!(&bytes[0..4], &[0x00, 0x00, 0x01, 0x00], "Should have valid ICO header");
+        assert_eq!(
+            &bytes[0..4],
+            &[0x00, 0x00, 0x01, 0x00],
+            "Should have valid ICO header"
+        );
 
         let _ = fs::remove_dir_all(&temp_dir);
         let _ = fs::remove_file(ico_path);

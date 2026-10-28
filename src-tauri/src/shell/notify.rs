@@ -1,9 +1,9 @@
 use std::path::Path;
 
 #[cfg(windows)]
-use windows::core::HSTRING;
+use windows::Win32::UI::Shell::{SHCNE_UPDATEDIR, SHCNF_PATHW, SHChangeNotify};
 #[cfg(windows)]
-use windows::Win32::UI::Shell::{SHChangeNotify, SHCNE_UPDATEDIR, SHCNF_PATHW};
+use windows::core::HSTRING;
 
 pub fn refresh_folder(folder: &Path) {
     #[cfg(windows)]

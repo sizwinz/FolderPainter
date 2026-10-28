@@ -1,6 +1,6 @@
 use crate::commands::color_icons::encode_multi_res_ico;
-use image::imageops::FilterType;
 use image::RgbaImage;
+use image::imageops::FilterType;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -70,7 +70,9 @@ pub fn fetch_collections() -> Result<CollectionsResponse, String> {
             if cache_file.exists() {
                 fs::read_to_string(&cache_file).map_err(|e| e.to_string())?
             } else {
-                return Err("Failed to connect to icon collection service and no cache exists".to_string());
+                return Err(
+                    "Failed to connect to icon collection service and no cache exists".to_string(),
+                );
             }
         }
     };
@@ -131,8 +133,8 @@ pub fn download_and_convert_icon(url: String) -> Result<String, String> {
         .read_to_vec()
         .map_err(|e| format!("Failed to read asset bytes: {}", e))?;
 
-    let img = image::load_from_memory(&bytes)
-        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    let img =
+        image::load_from_memory(&bytes).map_err(|e| format!("Failed to decode image: {}", e))?;
 
     let rgba = img.to_rgba8();
     let target_size = 256u32;
@@ -160,8 +162,7 @@ pub fn download_and_convert_icon(url: String) -> Result<String, String> {
     let ico_bytes = encode_multi_res_ico(&final_img)
         .map_err(|e| format!("Failed to encode multi-resolution ICO: {}", e))?;
 
-    fs::write(&out_path, ico_bytes)
-        .map_err(|e| format!("Failed to write icon file: {}", e))?;
+    fs::write(&out_path, ico_bytes).map_err(|e| format!("Failed to write icon file: {}", e))?;
 
     Ok(out_path.to_string_lossy().to_string())
 }
@@ -217,6 +218,9 @@ mod tests {
     fn test_fetch_collections_returns_valid_catalog() {
         let resp = fetch_collections().unwrap();
         assert!(resp.total > 0, "Should have collections");
-        assert!(!resp.collections.is_empty(), "Collections list should not be empty");
+        assert!(
+            !resp.collections.is_empty(),
+            "Collections list should not be empty"
+        );
     }
 }
