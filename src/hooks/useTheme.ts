@@ -19,6 +19,7 @@ export function useTheme() {
     } else {
       root.classList.remove("dark");
     }
+    root.style.colorScheme = theme;
     localStorage.setItem("folderpainter_theme", theme);
     setWindowTheme(theme);
   }, [theme]);

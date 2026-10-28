@@ -4,6 +4,7 @@ import {
   downloadAndConvertIcon,
   getCurrentIcon,
   getDefaultFolderPreview,
+  getIconPreviewDataUrl,
   getUndoState,
   redoLast,
   restoreIcon,
@@ -22,6 +23,7 @@ export function useFolderIcon() {
   const [selectedIconPath, setSelectedIconPath] = useState<string | null>(null);
   const [previewColorHex, setPreviewColorHex] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [applyToSubfolders, setApplyToSubfolders] = useState<boolean>(false);
   const [isApplying, setIsApplying] = useState(false);
   const [isPreparingIcon, setIsPreparingIcon] = useState(false);
   const [undoInfo, setUndoInfo] = useState<UndoStateInfo>({
@@ -116,11 +118,14 @@ export function useFolderIcon() {
     setStatusMessage(null);
 
     try {
-      await applyIcon(selectedFolder, selectedIconPath);
+      const count = await applyIcon(selectedFolder, selectedIconPath, applyToSubfolders);
       await refreshFolderIcon(selectedFolder);
       await refreshUndoState();
       setStatusMessage({
-        text: "Custom icon applied successfully to folder.",
+        text:
+          count > 1
+            ? `Applied custom icon to ${count} folders.`
+            : "Custom icon applied successfully to folder.",
         type: "success",
       });
     } catch (err: unknown) {
@@ -143,11 +148,20 @@ export function useFolderIcon() {
     setStatusMessage(null);
 
     try {
-      await restoreIcon(selectedFolder);
+      const count = await restoreIcon(selectedFolder, applyToSubfolders);
       await refreshFolderIcon(selectedFolder);
       await refreshUndoState();
+      const defaultPreview = await getDefaultFolderPreview().catch(() => null);
+      if (defaultPreview) {
+        setPreviewImageUrl(defaultPreview);
+      }
+      setSelectedIconPath(null);
+      setPreviewColorHex(null);
       setStatusMessage({
-        text: "Default folder icon restored successfully.",
+        text:
+          count > 1
+            ? `Default icon restored for ${count} folders.`
+            : "Default folder icon restored successfully.",
         type: "success",
       });
     } catch (err: unknown) {
@@ -167,12 +181,31 @@ export function useFolderIcon() {
     try {
       const entry = await undoLast();
       if (entry) {
-        if (selectedFolder && selectedFolder === entry.folder_path) {
-          await refreshFolderIcon(selectedFolder);
-        }
+        setSelectedFolder(entry.folder_path);
+        await refreshFolderIcon(entry.folder_path);
         await refreshUndoState();
+
+        if (entry.previous_icon) {
+          setSelectedIconPath(entry.previous_icon);
+          setPreviewColorHex(null);
+          try {
+            const dataUrl = await getIconPreviewDataUrl(entry.previous_icon);
+            setPreviewImageUrl(dataUrl);
+          } catch {
+            // Keep existing preview if preview generation fails
+          }
+        } else {
+          setSelectedIconPath(null);
+          setPreviewColorHex(null);
+          const defaultUrl = await getDefaultFolderPreview().catch(() => null);
+          if (defaultUrl) {
+            setPreviewImageUrl(defaultUrl);
+          }
+        }
+
+        const folderName = entry.folder_path.split(/[\\/]/).pop() || entry.folder_path;
         setStatusMessage({
-          text: `Undid last icon change for ${entry.folder_path}`,
+          text: `Reverted icon change for "${folderName}".${entry.recursive ? " (Subfolders included)" : ""}`,
           type: "info",
         });
       }
@@ -193,12 +226,31 @@ export function useFolderIcon() {
     try {
       const entry = await redoLast();
       if (entry) {
-        if (selectedFolder && selectedFolder === entry.folder_path) {
-          await refreshFolderIcon(selectedFolder);
-        }
+        setSelectedFolder(entry.folder_path);
+        await refreshFolderIcon(entry.folder_path);
         await refreshUndoState();
+
+        if (entry.new_icon) {
+          setSelectedIconPath(entry.new_icon);
+          setPreviewColorHex(null);
+          try {
+            const dataUrl = await getIconPreviewDataUrl(entry.new_icon);
+            setPreviewImageUrl(dataUrl);
+          } catch {
+            // Keep existing preview if preview generation fails
+          }
+        } else {
+          setSelectedIconPath(null);
+          setPreviewColorHex(null);
+          const defaultUrl = await getDefaultFolderPreview().catch(() => null);
+          if (defaultUrl) {
+            setPreviewImageUrl(defaultUrl);
+          }
+        }
+
+        const folderName = entry.folder_path.split(/[\\/]/).pop() || entry.folder_path;
         setStatusMessage({
-          text: `Redid icon change for ${entry.folder_path}`,
+          text: `Redid icon change for "${folderName}".${entry.recursive ? " (Subfolders included)" : ""}`,
           type: "info",
         });
       }
@@ -218,6 +270,8 @@ export function useFolderIcon() {
     selectedIconPath,
     previewColorHex,
     previewImageUrl,
+    applyToSubfolders,
+    setApplyToSubfolders,
     isApplying,
     isPreparingIcon,
     undoInfo,
@@ -230,6 +284,7 @@ export function useFolderIcon() {
     restore,
     undo,
     redo,
+    showStatus: (msg: StatusMessage) => setStatusMessage(msg),
     clearStatus: () => setStatusMessage(null),
   };
 }

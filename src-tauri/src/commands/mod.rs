@@ -5,3 +5,4 @@ pub mod icon_library;
 pub mod undo;
 pub mod window_theme;
 pub mod nsis_assets;
+pub mod icon_repair;

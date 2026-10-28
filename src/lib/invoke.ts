@@ -66,6 +66,12 @@ export async function convertImageToIcon(imagePath: string): Promise<ConvertedIc
   });
 }
 
+export async function getIconPreviewDataUrl(iconPath: string): Promise<string> {
+  return await invoke<string>("get_icon_preview_data_url", {
+    iconPath,
+  });
+}
+
 export async function fetchCollections(): Promise<CollectionsResponse> {
   return await invoke<CollectionsResponse>("fetch_collections");
 }
@@ -92,19 +98,29 @@ export async function clearIconCache(): Promise<void> {
   await invoke("clear_icon_cache");
 }
 
+export async function repairIconCache(): Promise<string> {
+  return await invoke<string>("repair_icon_cache");
+}
+
 export async function applyIcon(
   folderPath: string,
-  iconPath: string
-): Promise<void> {
-  await invoke("apply_icon_tracked", {
+  iconPath: string,
+  recursive?: boolean
+): Promise<number> {
+  return await invoke<number>("apply_icon_tracked", {
     folderPath,
     iconPath,
+    recursive: recursive ?? false,
   });
 }
 
-export async function restoreIcon(folderPath: string): Promise<void> {
-  await invoke("restore_icon_tracked", {
+export async function restoreIcon(
+  folderPath: string,
+  recursive?: boolean
+): Promise<number> {
+  return await invoke<number>("restore_icon_tracked", {
     folderPath,
+    recursive: recursive ?? false,
   });
 }
 

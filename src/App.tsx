@@ -16,20 +16,19 @@ import {
   Palette,
   Sliders,
   Image,
-  History,
   ArrowDownCircle,
   Download,
+  Wrench,
 } from "lucide-react";
 import logoUrl from "./assets/logo.png";
 import { IconLibraryTab } from "./components/IconLibraryTab";
 import { IconGrid, WindowsFolderIcon } from "./components/IconGrid";
 import { ColorWheel } from "./components/ColorWheel";
 import { CustomIconTab } from "./components/CustomIconTab";
-import { HistoryTab } from "./components/HistoryTab";
 import { useTheme } from "./hooks/useTheme";
 import { useFolderIcon } from "./hooks/useFolderIcon";
 import { useUpdater } from "./hooks/useUpdater";
-import { selectFolderDialog } from "./lib/invoke";
+import { repairIconCache, selectFolderDialog } from "./lib/invoke";
 import type { MainTabType } from "./lib/types";
 
 export default function App() {
@@ -37,6 +36,7 @@ export default function App() {
   const updater = useUpdater();
   const [currentTab, setCurrentTab] = useState<MainTabType>("library");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
   // Disable default browser right-click context menu
   useEffect(() => {
@@ -53,6 +53,8 @@ export default function App() {
     selectedIconPath,
     previewColorHex,
     previewImageUrl,
+    applyToSubfolders,
+    setApplyToSubfolders,
     isApplying,
     isPreparingIcon,
     undoInfo,
@@ -65,8 +67,27 @@ export default function App() {
     restore,
     undo,
     redo,
+    showStatus,
     clearStatus,
   } = useFolderIcon();
+
+  const handleRepairIcons = async () => {
+    setIsRepairing(true);
+    try {
+      const msg = await repairIconCache();
+      showStatus({
+        text: msg || "Windows icon cache rebuilt successfully.",
+        type: "success",
+      });
+    } catch (err: unknown) {
+      showStatus({
+        text: typeof err === "string" ? err : "Failed to repair icon cache.",
+        type: "error",
+      });
+    } finally {
+      setIsRepairing(false);
+    }
+  };
 
   const handleBrowseFolder = async () => {
     const path = await selectFolderDialog();
@@ -114,7 +135,7 @@ export default function App() {
             <img
               src={logoUrl}
               alt="FolderPainter"
-              className="w-8 h-8 object-contain drop-shadow-sm select-none"
+              className="w-8 h-8 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.30)] dark:drop-shadow-[0_4px_12px_rgba(0,0,0,0.60)] select-none transition-transform hover:scale-105"
             />
             <div>
               <h1 className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
@@ -194,6 +215,19 @@ export default function App() {
               <FolderOpen className="w-3.5 h-3.5" />
               <span>{selectedFolder ? "Change Folder" : "+ Add Folder"}</span>
             </button>
+
+            {/* Apply to subfolders toggle */}
+            <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-start text-left">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={applyToSubfolders}
+                  onChange={(e) => setApplyToSubfolders(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span>Apply to all subfolders</span>
+              </label>
+            </div>
           </div>
 
           {/* Actions & Undo controls */}
@@ -329,22 +363,30 @@ export default function App() {
               <span className="hidden md:inline">Import Image</span>
               <span className="md:hidden">Import</span>
             </button>
-
-            <button
-              onClick={() => setCurrentTab("history")}
-              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                currentTab === "history"
-                  ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-              }`}
-            >
-              <History className="w-3.5 h-3.5 shrink-0" />
-              <span>History</span>
-            </button>
           </div>
 
-          {/* Action Buttons: Updates + Theme */}
+          {/* Action Buttons: Repair + Updates + Theme */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Shell Icon Repair Button */}
+            <button
+              onClick={handleRepairIcons}
+              disabled={isRepairing}
+              title="Rebuild Windows icon cache and refresh shell"
+              className="px-2 sm:px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isRepairing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                  <span className="hidden sm:inline">Repairing...</span>
+                </>
+              ) : (
+                <>
+                  <Wrench className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="hidden sm:inline">Repair Icons</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => updater.checkForUpdates(true)}
               disabled={updater.status.state === "checking" || updater.status.state === "downloading"}
@@ -470,7 +512,7 @@ export default function App() {
           )}
 
           {currentTab === "presets" && (
-            <div className="overflow-y-auto h-full pr-1">
+            <div className="overflow-y-auto h-full pr-2">
               <IconGrid
                 selectedIconPath={selectedIconPath}
                 onSelectIcon={selectColorPreset}
@@ -479,25 +521,14 @@ export default function App() {
           )}
 
           {currentTab === "custom_color" && (
-            <div className="overflow-y-auto h-full pr-1">
+            <div className="overflow-y-auto h-full pr-2">
               <ColorWheel onSelectIcon={selectColorPreset} />
             </div>
           )}
 
           {currentTab === "import_image" && (
-            <div className="overflow-y-auto h-full pr-1">
+            <div className="overflow-y-auto h-full pr-2">
               <CustomIconTab onSelectIcon={selectCustomImagePath} />
-            </div>
-          )}
-
-          {currentTab === "history" && (
-            <div className="overflow-y-auto h-full pr-1">
-              <HistoryTab
-                undoInfo={undoInfo}
-                onUndo={undo}
-                onRedo={redo}
-                isApplying={isApplying}
-              />
             </div>
           )}
         </section>

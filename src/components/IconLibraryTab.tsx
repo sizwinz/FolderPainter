@@ -21,6 +21,7 @@ export const IconLibraryTab: React.FC<IconLibraryTabProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshingCache, setIsRefreshingCache] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [offset, setOffset] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -143,6 +144,16 @@ export const IconLibraryTab: React.FC<IconLibraryTabProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showClearConfirm) {
+        setShowClearConfirm(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showClearConfirm]);
+
   // Filter items by collection if selected
   const filteredItems = useMemo(() => {
     if (selectedCollectionId === "all") {
@@ -223,7 +234,7 @@ export const IconLibraryTab: React.FC<IconLibraryTabProps> = ({
 
         {/* Cache Refresh Action Button */}
         <button
-          onClick={handleRefreshCache}
+          onClick={() => setShowClearConfirm(true)}
           disabled={isRefreshingCache || isLoading}
           title="Refresh cached icon catalog and thumbnails"
           className="px-2.5 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50"
@@ -238,11 +249,60 @@ export const IconLibraryTab: React.FC<IconLibraryTabProps> = ({
         </button>
       </div>
 
+      {/* Clear Cache Confirmation Modal */}
+      {showClearConfirm && (
+        <div
+          onClick={() => setShowClearConfirm(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 shrink-0">
+                <Database className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  Clear Icon Cache?
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  This will purge locally cached catalog lists, icon thumbnails, and downloaded assets. Fresh data will be downloaded from the repository.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={isRefreshingCache}
+                className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowClearConfirm(false);
+                  await handleRefreshCache();
+                }}
+                disabled={isRefreshingCache}
+                className="px-3.5 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-xs"
+              >
+                Clear Cache
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Catalog Grid Area with Infinite Scroll */}
       <div
         ref={containerRef}
         onScroll={handleContainerScroll}
-        className="flex-1 overflow-y-auto space-y-6 pr-1"
+        className="flex-1 overflow-y-auto space-y-6 pr-2"
       >
         {groupedCollections.map((group) => (
           <div key={group.id} className="space-y-2.5">

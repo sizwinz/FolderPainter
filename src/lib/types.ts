@@ -20,6 +20,7 @@ export interface UndoEntry {
   folder_path: string;
   previous_icon: string | null;
   new_icon: string | null;
+  recursive?: boolean;
 }
 
 export interface UndoStateInfo {
@@ -67,5 +68,5 @@ export interface CatalogResponse {
   items: IconItem[];
 }
 
-export type MainTabType = "library" | "presets" | "custom_color" | "import_image" | "history";
+export type MainTabType = "library" | "presets" | "custom_color" | "import_image";
 export type TabType = MainTabType;

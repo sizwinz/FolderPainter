@@ -1,5 +1,5 @@
 import React from "react";
-import { Palette, Sliders, Image, History, Sun, Moon, Folder } from "lucide-react";
+import { Palette, Sliders, Image, Sun, Moon, Folder } from "lucide-react";
 import type { TabType } from "../lib/types";
 import type { Theme } from "../hooks/useTheme";
 
@@ -16,13 +16,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
   theme,
   onToggleTheme,
-  undoCount,
+  undoCount: _undoCount,
 }) => {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "presets", label: "Presets", icon: <Palette className="w-4 h-4" /> },
     { id: "custom_color", label: "Custom Color", icon: <Sliders className="w-4 h-4" /> },
     { id: "import_image", label: "Import Image", icon: <Image className="w-4 h-4" /> },
-    { id: "history", label: "History", icon: <History className="w-4 h-4" />, badge: undoCount > 0 ? undoCount : undefined },
   ];
 
   return (

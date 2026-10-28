@@ -1,7 +1,7 @@
 use crate::commands::folder_icon;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::State;
 
@@ -10,6 +10,8 @@ pub struct UndoEntry {
     pub folder_path: String,
     pub previous_icon: Option<String>,
     pub new_icon: Option<String>,
+    #[serde(default)]
+    pub recursive: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,7 +44,13 @@ impl UndoManager {
         manager
     }
 
-    pub fn push_action(&mut self, folder: String, prev: Option<String>, new: Option<String>) {
+    pub fn push_action(
+        &mut self,
+        folder: String,
+        prev: Option<String>,
+        new: Option<String>,
+        recursive: bool,
+    ) {
         if self.undo_stack.len() >= 50 {
             self.undo_stack.remove(0);
         }
@@ -50,6 +58,7 @@ impl UndoManager {
             folder_path: folder,
             previous_icon: prev,
             new_icon: new,
+            recursive,
         });
         self.redo_stack.clear();
         let _ = self.save();
@@ -122,37 +131,56 @@ pub type UndoManagerState = Mutex<UndoManager>;
 pub fn apply_icon_tracked(
     folder_path: String,
     icon_path: String,
+    recursive: Option<bool>,
     state: State<'_, UndoManagerState>,
-) -> Result<(), String> {
+) -> Result<u32, String> {
+    let folder = Path::new(&folder_path);
+    if !folder.exists() {
+        return Err(format!("Folder does not exist: {}", folder_path));
+    }
+
+    let is_rec = recursive.unwrap_or(false);
     let prev = folder_icon::get_current_icon(folder_path.clone())?;
-    folder_icon::apply_icon(folder_path.clone(), icon_path.clone())?;
+    let count = folder_icon::apply_icon_tree(folder, &icon_path, is_rec)?;
 
     let mut manager = state.lock().map_err(|e| e.to_string())?;
-    manager.push_action(folder_path, prev, Some(icon_path));
-    Ok(())
+    manager.push_action(folder_path, prev, Some(icon_path), is_rec);
+    Ok(count)
 }
 
 #[tauri::command]
 pub fn restore_icon_tracked(
     folder_path: String,
+    recursive: Option<bool>,
     state: State<'_, UndoManagerState>,
-) -> Result<(), String> {
+) -> Result<u32, String> {
+    let folder = Path::new(&folder_path);
+    if !folder.exists() {
+        return Err(format!("Folder does not exist: {}", folder_path));
+    }
+
+    let is_rec = recursive.unwrap_or(false);
     let prev = folder_icon::get_current_icon(folder_path.clone())?;
-    folder_icon::restore_icon(folder_path.clone())?;
+    let count = folder_icon::restore_icon_tree(folder, is_rec)?;
 
     let mut manager = state.lock().map_err(|e| e.to_string())?;
-    manager.push_action(folder_path, prev, None);
-    Ok(())
+    manager.push_action(folder_path, prev, None, is_rec);
+    Ok(count)
 }
 
 #[tauri::command]
 pub fn undo_last(state: State<'_, UndoManagerState>) -> Result<Option<UndoEntry>, String> {
     let mut manager = state.lock().map_err(|e| e.to_string())?;
     if let Some(entry) = manager.undo() {
-        if let Some(prev) = &entry.previous_icon {
-            folder_icon::apply_icon(entry.folder_path.clone(), prev.clone())?;
-        } else {
-            folder_icon::restore_icon(entry.folder_path.clone())?;
+        let folder = Path::new(&entry.folder_path);
+        if folder.exists() {
+            if let Some(prev) = &entry.previous_icon {
+                let _ = folder_icon::apply_icon_tree(folder, prev, entry.recursive);
+            } else {
+                let _ = folder_icon::restore_icon_tree(folder, entry.recursive);
+            }
+            crate::shell::notify::refresh_folder(folder);
+            crate::shell::notify::broadcast_icon_repair();
         }
         Ok(Some(entry))
     } else {
@@ -164,10 +192,15 @@ pub fn undo_last(state: State<'_, UndoManagerState>) -> Result<Option<UndoEntry>
 pub fn redo_last(state: State<'_, UndoManagerState>) -> Result<Option<UndoEntry>, String> {
     let mut manager = state.lock().map_err(|e| e.to_string())?;
     if let Some(entry) = manager.redo() {
-        if let Some(new_icon) = &entry.new_icon {
-            folder_icon::apply_icon(entry.folder_path.clone(), new_icon.clone())?;
-        } else {
-            folder_icon::restore_icon(entry.folder_path.clone())?;
+        let folder = Path::new(&entry.folder_path);
+        if folder.exists() {
+            if let Some(new_icon) = &entry.new_icon {
+                let _ = folder_icon::apply_icon_tree(folder, new_icon, entry.recursive);
+            } else {
+                let _ = folder_icon::restore_icon_tree(folder, entry.recursive);
+            }
+            crate::shell::notify::refresh_folder(folder);
+            crate::shell::notify::broadcast_icon_repair();
         }
         Ok(Some(entry))
     } else {
@@ -199,6 +232,7 @@ mod tests {
             r"C:\TestFolder".to_string(),
             None,
             Some(r"C:\Icons\red.ico".to_string()),
+            false,
         );
 
         let info = manager.get_info();
@@ -210,6 +244,7 @@ mod tests {
         assert_eq!(undone.folder_path, r"C:\TestFolder");
         assert_eq!(undone.new_icon, Some(r"C:\Icons\red.ico".to_string()));
         assert_eq!(undone.previous_icon, None);
+        assert!(!undone.recursive);
 
         let info_after_undo = manager.get_info();
         assert!(!info_after_undo.can_undo);

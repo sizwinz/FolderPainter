@@ -81,6 +81,17 @@ pub fn convert_image_to_icon(image_path: String) -> Result<ConvertedIconResult, 
     })
 }
 
+#[tauri::command]
+pub fn get_icon_preview_data_url(icon_path: String) -> Result<String, String> {
+    let path = Path::new(&icon_path);
+    if !path.exists() {
+        return Err(format!("Icon file does not exist: {}", icon_path));
+    }
+    let img = image::open(path).map_err(|e| format!("Failed to read icon file: {}", e))?;
+    let rgba = img.to_rgba8();
+    encode_png_data_url(&rgba)
+}
+
 pub fn get_custom_icons_dir() -> Result<PathBuf, String> {
     let base = dirs::data_local_dir()
         .unwrap_or_else(|| std::env::temp_dir())
@@ -134,5 +145,25 @@ mod tests {
 
         let _ = fs::remove_dir_all(&temp_dir);
         let _ = fs::remove_file(ico_path);
+    }
+
+    #[test]
+    fn test_get_icon_preview_data_url() {
+        let temp_dir = std::env::temp_dir().join(format!(
+            "test_preview_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&temp_dir).unwrap();
+        let png_path = temp_dir.join("sample.png");
+        let sample_img = RgbaImage::new(32, 32);
+        sample_img.save(&png_path).unwrap();
+
+        let preview = get_icon_preview_data_url(png_path.to_str().unwrap().to_string()).unwrap();
+        assert!(preview.starts_with("data:image/png;base64,"));
+
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }
