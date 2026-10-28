@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.png" alt="FolderPainter Logo" width="108" height="108" style="margin-bottom: 8px;" />
+
 # FolderPainter
 
 **Modern, open-source Windows folder customization studio.**  
