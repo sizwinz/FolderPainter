@@ -17,35 +17,47 @@ export function WindowsFolderIcon({
 }) {
   return (
     <svg
-      viewBox="0 0 48 48"
+      viewBox="0 0 256 256"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Back tab and back plate */}
+      {/* Back tab and body */}
       <path
-        d="M4 11C4 9.34315 5.34315 8 7 8H19C20.6569 8 22 9.34315 22 11V13H41C42.6569 13 44 14.3431 44 16V36C44 37.6569 42.6569 39 41 39H7C5.34315 39 4 37.6569 4 36V11Z"
+        d="M 20 44 C 20 38, 26 34, 34 34 L 102 34 C 108 34, 114 38, 118 44 L 126 58 L 228 58 C 235 58, 240 63, 240 70 L 240 206 C 240 214, 234 220, 226 220 L 20 220 Z"
         fill={color}
-        fillOpacity="0.82"
+        fillOpacity="0.88"
       />
-      {/* Interior White Paper Insert */}
-      <rect x="9" y="11" width="30" height="18" rx="2" fill="#FFFFFF" />
-      <path
-        d="M14 15H25M14 18H32M14 21H28"
-        stroke="#CBD5E1"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      {/* Front Folder Flap */}
-      <rect x="4" y="16" width="40" height="23" rx="4" fill={color} />
+      {/* Front Folder Flap (Solid Windows 11 silhouette matching FolderIco) */}
       <rect
-        x="4"
-        y="16"
-        width="40"
-        height="23"
-        rx="4"
-        fill="black"
-        fillOpacity="0.08"
+        x="16"
+        y="62"
+        width="224"
+        height="148"
+        rx="16"
+        ry="16"
+        fill={color}
+      />
+      {/* Front flap specular highlight */}
+      <rect
+        x="18"
+        y="62"
+        width="220"
+        height="2"
+        rx="1"
+        fill="#FFFFFF"
+        fillOpacity="0.35"
+      />
+      {/* Subtle depth gradient */}
+      <rect
+        x="16"
+        y="62"
+        width="224"
+        height="148"
+        rx="16"
+        ry="16"
+        fill="#000000"
+        fillOpacity="0.04"
       />
     </svg>
   );

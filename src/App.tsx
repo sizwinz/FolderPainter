@@ -51,6 +51,14 @@ export default function App() {
     return () => window.removeEventListener("contextmenu", handleContextMenu);
   }, []);
 
+  // Silent auto-check for updates on application launch
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updater.checkForUpdates(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const {
     selectedFolder,
     currentFolderIcon,
@@ -550,25 +558,25 @@ export default function App() {
               <Download className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
-                  Version {updater.status.version} is available
+                  FolderPainter v{updater.status.version} is ready
                 </p>
                 <p className="text-[11px] text-blue-700 dark:text-blue-300">
-                  {updater.status.body || "New features and enhancements are ready."}
+                  {updater.status.body || "New features and enhancements are ready. Update now and restart?"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={updater.downloadAndInstallUpdate}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
               >
-                Download & Install
+                Update & Restart
               </button>
               <button
                 onClick={updater.dismiss}
-                className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800"
+                className="px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                Later
               </button>
             </div>
           </div>
@@ -579,7 +587,7 @@ export default function App() {
             <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex justify-between text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">
-                <span>Downloading update...</span>
+                <span>Downloading update... The app will restart automatically once finished.</span>
                 {updater.status.total ? (
                   <span>
                     {Math.round(((updater.status.downloaded ?? 0) / updater.status.total) * 100)}%
@@ -604,7 +612,7 @@ export default function App() {
           <div className="mx-5 mt-3 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>FolderPainter is up to date (v0.1.0).</span>
+              <span>FolderPainter is up to date.</span>
             </div>
             <button onClick={updater.dismiss} className="text-emerald-600 hover:text-emerald-800">
               <X className="w-3.5 h-3.5" />

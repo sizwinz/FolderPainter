@@ -1,7 +1,10 @@
 use crate::commands::folder_icon;
 use serde::{Deserialize, Serialize};
+#[cfg(not(test))]
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(not(test))]
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::State;
 
@@ -154,6 +157,7 @@ impl UndoManager {
         }
     }
 
+    #[cfg(not(test))]
     fn get_history_file() -> Option<PathBuf> {
         let base = dirs::data_local_dir()?.join("FolderPainter");
         if !base.exists() {
@@ -163,26 +167,46 @@ impl UndoManager {
     }
 
     fn save(&self) -> Result<(), String> {
-        if let Some(path) = Self::get_history_file() {
-            let json = serde_json::to_string_pretty(self)
-                .map_err(|e| format!("Failed to serialize history: {}", e))?;
-            fs::write(path, json).map_err(|e| format!("Failed to write history file: {}", e))?;
+        #[cfg(test)]
+        {
+            return Ok(());
         }
-        Ok(())
+        #[cfg(not(test))]
+        {
+            if let Some(path) = Self::get_history_file() {
+                let json = serde_json::to_string_pretty(self)
+                    .map_err(|e| format!("Failed to serialize history: {}", e))?;
+                fs::write(path, json).map_err(|e| format!("Failed to write history file: {}", e))?;
+            }
+            Ok(())
+        }
+    }
+
+    pub fn clean_nonexistent(&mut self) {
+        self.undo_stack.retain(|e| Path::new(&e.folder_path).exists());
+        self.redo_stack.retain(|e| Path::new(&e.folder_path).exists());
     }
 
     fn load(&mut self) -> Result<(), String> {
-        if let Some(path) = Self::get_history_file() {
-            if path.exists() {
-                if let Ok(content) = fs::read_to_string(&path) {
-                    if let Ok(data) = serde_json::from_str::<UndoManager>(&content) {
-                        self.undo_stack = data.undo_stack;
-                        self.redo_stack = data.redo_stack;
+        #[cfg(test)]
+        {
+            return Ok(());
+        }
+        #[cfg(not(test))]
+        {
+            if let Some(path) = Self::get_history_file() {
+                if path.exists() {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(data) = serde_json::from_str::<UndoManager>(&content) {
+                            self.undo_stack = data.undo_stack;
+                            self.redo_stack = data.redo_stack;
+                            self.clean_nonexistent();
+                        }
                     }
                 }
             }
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -395,5 +419,38 @@ mod tests {
         // Redo stack should now contain FolderB
         assert_eq!(manager.redo_stack.len(), 1);
         assert_eq!(manager.redo_stack[0].folder_name, "FolderB");
+    }
+
+    #[test]
+    fn test_filter_nonexistent_folders() {
+        let entry_real = UndoEntry {
+            id: "1".into(),
+            folder_path: std::env::current_dir().unwrap().to_str().unwrap().into(),
+            folder_name: "test".into(),
+            previous_icon: None,
+            new_icon: None,
+            action_type: "apply".into(),
+            recursive: false,
+            timestamp: 0,
+            preview_data_url: None,
+        };
+        let entry_fake = UndoEntry {
+            id: "2".into(),
+            folder_path: r"C:\FolderDoesNotExist123456789".into(),
+            folder_name: "FolderDoesNotExist".into(),
+            previous_icon: None,
+            new_icon: None,
+            action_type: "apply".into(),
+            recursive: false,
+            timestamp: 0,
+            preview_data_url: None,
+        };
+        let mut manager = UndoManager {
+            undo_stack: vec![entry_real, entry_fake],
+            redo_stack: vec![],
+        };
+        manager.clean_nonexistent();
+        assert_eq!(manager.undo_stack.len(), 1);
+        assert_eq!(manager.undo_stack[0].id, "1");
     }
 }

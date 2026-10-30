@@ -202,21 +202,20 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
 
     let back_rgb = hsl_to_rgb(hue, saturation * 0.95, (lightness - 0.12).clamp(0.05, 0.95));
     let tab_rgb = hsl_to_rgb(hue, saturation * 0.90, (lightness - 0.08).clamp(0.05, 0.95));
-    let slot_rgb = hsl_to_rgb(hue, saturation * 0.30, 0.92);
 
-    // 1. Draw back tab and back plate
+    // 1. Draw back tab and back plate (Windows 11 / FolderIco style)
     for y in 0..height {
         for x in 0..width {
             let px = x as f32;
             let py = y as f32;
 
-            // Back tab (x: 24..112, y: 38..74)
-            let in_tab = px >= 24.0 && px <= 112.0 && py >= 38.0 && py <= 74.0;
-            // Back body (x: 24..232, y: 56..216)
-            let in_back = px >= 24.0 && px <= 232.0 && py >= 56.0 && py <= 216.0;
+            // Back tab (x: 16..108, y: 34..64)
+            let in_tab = px >= 16.0 && px <= 108.0 && py >= 34.0 && py <= 64.0;
+            // Back body (x: 16..240, y: 48..210)
+            let in_back = px >= 16.0 && px <= 240.0 && py >= 48.0 && py <= 210.0;
 
             if in_tab || in_back {
-                let color = if in_tab && py < 56.0 {
+                let color = if in_tab && py < 54.0 {
                     tab_rgb
                 } else {
                     back_rgb
@@ -226,17 +225,10 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
         }
     }
 
-    // 2. Interior slot/paper sheet peeking through
-    for y in 66..88 {
-        for x in 38..218 {
-            img.put_pixel(x, y, Rgba([slot_rgb.0, slot_rgb.1, slot_rgb.2, 240]));
-        }
-    }
-
-    // 3. Drop shadow under front cover (y: 220..232)
-    for y in 220..232 {
-        for x in 24..232 {
-            let dist_y = (y - 220) as f32;
+    // 2. Drop shadow under front cover (y: 208..220)
+    for y in 208..220 {
+        for x in 16..240 {
+            let dist_y = (y - 208) as f32;
             let alpha = ((1.0 - dist_y / 12.0) * 80.0) as u8;
             let curr = img.get_pixel(x, y);
             if curr[3] == 0 {
@@ -245,15 +237,15 @@ pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaIm
         }
     }
 
-    // 4. Draw front cover with rounded corners and gradient
-    let front_left = 20.0;
-    let front_right = 236.0;
-    let front_top = 82.0;
-    let front_bottom = 222.0;
+    // 3. Draw solid front cover with rounded corners and gradient (no white paper insert)
+    let front_left = 16.0;
+    let front_right = 240.0;
+    let front_top = 62.0;
+    let front_bottom = 210.0;
     let corner_radius = 16.0;
 
-    for y in 82..224 {
-        for x in 20..238 {
+    for y in 62..212 {
+        for x in 16..242 {
             let px = x as f32;
             let py = y as f32;
 
@@ -448,5 +440,18 @@ mod tests {
         assert_eq!(presets.len(), 13, "Should have 13 preset colors");
 
         let _ = fs::remove_file(icon_path);
+    }
+
+    #[test]
+    fn test_render_folder_canvas_has_solid_flap_matching_folderico() {
+        let img = render_folder_canvas(48.0, 0.98, 0.60);
+        // At (128, 75), the folder should be vibrant yellow (B < 100), NOT whitish paper insert (which had B=229)
+        let pixel = img.get_pixel(128, 75);
+        assert!(
+            pixel[2] < 100,
+            "Pixel at (128, 75) should be vibrant yellow front flap (B < 100), not whitish paper insert (got B={})",
+            pixel[2]
+        );
+        assert!(pixel[0] > 200 && pixel[1] > 180, "Pixel at (128, 75) should be yellow");
     }
 }
