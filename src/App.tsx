@@ -19,12 +19,15 @@ import {
   ArrowDownCircle,
   Download,
   Wrench,
+  History,
+  Wand2,
 } from "lucide-react";
 import logoUrl from "./assets/logo.png";
 import { IconLibraryTab } from "./components/IconLibraryTab";
 import { IconGrid, WindowsFolderIcon } from "./components/IconGrid";
 import { ColorWheel } from "./components/ColorWheel";
 import { CustomIconTab } from "./components/CustomIconTab";
+import { IconDesignerTab } from "./components/IconDesignerTab";
 import { useTheme } from "./hooks/useTheme";
 import { useFolderIcon } from "./hooks/useFolderIcon";
 import { useUpdater } from "./hooks/useUpdater";
@@ -37,6 +40,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<MainTabType>("library");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Disable default browser right-click context menu
   useEffect(() => {
@@ -50,6 +54,8 @@ export default function App() {
   const {
     selectedFolder,
     currentFolderIcon,
+    folderCurrentPreviewUrl,
+    showingFolderCurrentIcon,
     selectedIconPath,
     previewColorHex,
     previewImageUrl,
@@ -67,6 +73,7 @@ export default function App() {
     restore,
     undo,
     redo,
+    undoSpecificEntry,
     showStatus,
     clearStatus,
   } = useFolderIcon();
@@ -119,8 +126,20 @@ export default function App() {
     }
   };
 
-  const canApply = Boolean(selectedFolder && (selectedIconPath || previewImageUrl) && !isApplying && !isPreparingIcon);
+  const canApply = Boolean(
+    selectedFolder &&
+      (selectedIconPath || (!showingFolderCurrentIcon && (previewImageUrl || previewColorHex))) &&
+      !isApplying &&
+      !isPreparingIcon &&
+      !showingFolderCurrentIcon
+  );
   const canRestore = Boolean(selectedFolder && !isApplying);
+
+  const formatTimestamp = (timestamp?: number) => {
+    if (!timestamp) return "Recent";
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
 
   return (
     <div
@@ -128,8 +147,8 @@ export default function App() {
       className="flex h-screen w-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased overflow-hidden select-none"
     >
       {/* Left Workspace Panel */}
-      <aside className="w-64 lg:w-72 shrink-0 h-screen flex flex-col justify-between border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/50 p-3 lg:p-4 transition-all">
-        <div className="space-y-3">
+      <aside className="w-64 lg:w-72 shrink-0 h-screen flex flex-col justify-between border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/50 p-3 lg:p-4 transition-all overflow-y-auto no-scrollbar">
+        <div className="space-y-2.5">
           {/* App Brand Header */}
           <div className="flex items-center gap-2.5 px-1 pt-0.5 pb-1">
             <img
@@ -148,31 +167,46 @@ export default function App() {
           </div>
 
           {/* Big Folder Preview Box */}
-          <div className="w-full h-36 lg:h-44 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-3 shadow-xs">
+          <div className="w-full h-34 lg:h-40 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-2.5 shadow-xs relative">
             {isPreparingIcon ? (
               <div className="flex flex-col items-center gap-2 text-zinc-400">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
                 <span className="text-[11px] font-medium">Preparing Icon...</span>
               </div>
             ) : previewImageUrl ? (
               <img
                 src={previewImageUrl}
                 alt="Selected folder preview"
-                className="w-22 h-22 lg:w-28 lg:h-28 object-contain drop-shadow-md transition-transform hover:scale-105"
+                className="w-20 h-20 lg:w-24 lg:h-24 object-contain drop-shadow-md transition-transform hover:scale-105"
               />
             ) : previewColorHex ? (
               <WindowsFolderIcon
                 color={previewColorHex}
-                className="w-22 h-22 lg:w-28 lg:h-28 drop-shadow-md transition-transform hover:scale-105"
+                className="w-20 h-20 lg:w-24 lg:h-24 drop-shadow-md transition-transform hover:scale-105"
               />
             ) : (
               <WindowsFolderIcon
                 color="#FDD835"
-                className="w-22 h-22 lg:w-28 lg:h-28 drop-shadow-md transition-transform hover:scale-105"
+                className="w-20 h-20 lg:w-24 lg:h-24 drop-shadow-md transition-transform hover:scale-105"
               />
             )}
-            <div className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-semibold mt-1">
-              {previewImageUrl || previewColorHex ? "Custom Selection" : "Standard Folder"}
+
+            <div className="mt-1 flex items-center justify-center">
+              {showingFolderCurrentIcon ? (
+                currentFolderIcon ? (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
+                    Active Custom Icon
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                    Active: Standard Folder
+                  </span>
+                )
+              ) : (
+                <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-900">
+                  New Icon Ready to Apply
+                </span>
+              )}
             </div>
           </div>
 
@@ -181,7 +215,7 @@ export default function App() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`p-3.5 rounded-xl border text-center transition-all ${
+            className={`p-3 rounded-xl border text-center transition-all ${
               isDragOver
                 ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30"
                 : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
@@ -192,16 +226,39 @@ export default function App() {
             </div>
 
             {selectedFolder ? (
-              <div className="mt-1 flex items-center justify-between gap-1.5 p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-                <span
-                  className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate text-left"
-                  title={selectedFolder}
-                >
-                  {selectedFolder}
-                </span>
+              <div className="mt-1.5 flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60">
+                {/* Folder icon preview thumbnail */}
+                <div className="w-7 h-7 shrink-0 rounded bg-white dark:bg-zinc-900 p-0.5 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden">
+                  {folderCurrentPreviewUrl ? (
+                    <img
+                      src={folderCurrentPreviewUrl}
+                      alt="Folder icon"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <WindowsFolderIcon color="#FDD835" className="w-5 h-5" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 text-left">
+                  <div
+                    className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate"
+                    title={selectedFolder}
+                  >
+                    {selectedFolder.split(/[\\/]/).filter(Boolean).pop() || selectedFolder}
+                  </div>
+                  <div
+                    className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate"
+                    title={selectedFolder}
+                  >
+                    {selectedFolder}
+                  </div>
+                </div>
+
                 <button
                   onClick={() => selectFolder("")}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded"
+                  title="Deselect folder"
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -210,14 +267,14 @@ export default function App() {
 
             <button
               onClick={handleBrowseFolder}
-              className="mt-2.5 w-full py-1.5 px-3 text-xs font-medium bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 rounded-lg transition-opacity flex items-center justify-center gap-1.5 shadow-xs"
+              className="mt-2 w-full py-1.5 px-3 text-xs font-medium bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 rounded-lg transition-opacity flex items-center justify-center gap-1.5 shadow-xs"
             >
               <FolderOpen className="w-3.5 h-3.5" />
               <span>{selectedFolder ? "Change Folder" : "+ Add Folder"}</span>
             </button>
 
             {/* Apply to subfolders toggle */}
-            <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-start text-left">
+            <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-start text-left">
               <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
                 <input
                   type="checkbox"
@@ -231,7 +288,7 @@ export default function App() {
           </div>
 
           {/* Actions & Undo controls */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <button
               onClick={apply}
               disabled={!canApply}
@@ -255,33 +312,79 @@ export default function App() {
             </button>
           </div>
 
-          {/* Quick Undo / Redo */}
-          <div className="flex gap-2">
+          {/* Quick Undo / Redo / History */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={undo}
               disabled={!undoInfo.can_undo || isApplying}
               title="Undo last icon change"
-              className="flex-1 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg flex items-center justify-center gap-1 transition-colors"
             >
               <Undo className="w-3.5 h-3.5" />
               <span>Undo ({undoInfo.undo_count})</span>
             </button>
+
             <button
               onClick={redo}
               disabled={!undoInfo.can_redo || isApplying}
               title="Redo change"
-              className="flex-1 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg flex items-center justify-center gap-1 transition-colors"
             >
               <Redo className="w-3.5 h-3.5" />
               <span>Redo</span>
             </button>
+
+            <button
+              onClick={() => setShowHistoryModal(true)}
+              title="View recent update history"
+              className="p-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg transition-colors flex items-center justify-center"
+            >
+              <History className="w-3.5 h-3.5" />
+            </button>
           </div>
+
+          {/* Visual Last Update Card */}
+          {undoInfo.last_undo && (
+            <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mb-1.5">
+                <span className="uppercase tracking-wider">Last Update</span>
+                <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  {undoInfo.last_undo.action_type === "restore" ? "Restored" : "Applied"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded bg-zinc-100 dark:bg-zinc-800 p-0.5 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                  {undoInfo.last_undo.preview_data_url ? (
+                    <img
+                      src={undoInfo.last_undo.preview_data_url}
+                      alt="Last updated icon"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <WindowsFolderIcon color="#FDD835" className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p
+                    className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate"
+                    title={undoInfo.last_undo.folder_path}
+                  >
+                    {undoInfo.last_undo.folder_name ||
+                      undoInfo.last_undo.folder_path.split(/[\\/]/).filter(Boolean).pop()}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                    {undoInfo.last_undo.recursive ? "Subfolders updated" : "Folder only"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status Alert Footer */}
         {statusMessage ? (
           <div
-            className={`p-2.5 rounded-lg text-xs flex items-start gap-2 ${
+            className={`mt-2 p-2.5 rounded-lg text-xs flex items-start gap-2 ${
               statusMessage.type === "success"
                 ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                 : statusMessage.type === "error"
@@ -289,9 +392,15 @@ export default function App() {
                 : "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
             }`}
           >
-            {statusMessage.type === "success" && <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />}
-            {statusMessage.type === "error" && <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />}
-            {statusMessage.type === "info" && <Info className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />}
+            {statusMessage.type === "success" && (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+            )}
+            {statusMessage.type === "error" && (
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+            )}
+            {statusMessage.type === "info" && (
+              <Info className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="leading-tight">{statusMessage.text}</p>
             </div>
@@ -300,7 +409,7 @@ export default function App() {
             </button>
           </div>
         ) : currentFolderIcon ? (
-          <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+          <div className="mt-2 p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
             Active: <span className="font-mono text-zinc-700 dark:text-zinc-300">{currentFolderIcon}</span>
           </div>
         ) : null}
@@ -336,6 +445,19 @@ export default function App() {
               <Palette className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden md:inline">Color Presets</span>
               <span className="md:hidden">Colors</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab("designer")}
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                currentTab === "designer"
+                  ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              }`}
+            >
+              <Wand2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Icon Designer</span>
+              <span className="md:hidden">Designer</span>
             </button>
 
             <button
@@ -520,6 +642,14 @@ export default function App() {
             </div>
           )}
 
+          {currentTab === "designer" && (
+            <IconDesignerTab
+              onSelectDesignedIcon={(iconPath, previewUrl) => {
+                selectCustomImagePath(iconPath, previewUrl);
+              }}
+            />
+          )}
+
           {currentTab === "custom_color" && (
             <div className="overflow-y-auto h-full pr-2">
               <ColorWheel onSelectIcon={selectColorPreset} />
@@ -533,6 +663,118 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {/* Visual Recent Updates History Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Recent Icon Updates
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Visual history of folder customization changes.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-2.5 flex-1">
+              {undoInfo.undo_stack && undoInfo.undo_stack.length > 0 ? (
+                undoInfo.undo_stack
+                  .slice()
+                  .reverse()
+                  .map((entry, index) => (
+                    <div
+                      key={entry.id || `${entry.folder_path}_${index}`}
+                      className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 flex items-center gap-3"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 p-1 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                        {entry.preview_data_url ? (
+                          <img
+                            src={entry.preview_data_url}
+                            alt="Entry icon"
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <WindowsFolderIcon color="#FDD835" className="w-6 h-6" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                            {entry.folder_name ||
+                              entry.folder_path.split(/[\\/]/).filter(Boolean).pop()}
+                          </span>
+                          <span
+                            className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${
+                              entry.action_type === "restore"
+                                ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                                : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                            }`}
+                          >
+                            {entry.action_type === "restore" ? "Restored" : "Applied"}
+                          </span>
+                        </div>
+                        <p
+                          className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5"
+                          title={entry.folder_path}
+                        >
+                          {entry.folder_path}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="text-[10px] text-zinc-400">
+                          {formatTimestamp(entry.timestamp)}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            if (entry.id) {
+                              await undoSpecificEntry(entry.id);
+                            } else {
+                              await undo();
+                            }
+                          }}
+                          disabled={isApplying}
+                          title={`Undo icon change for ${entry.folder_name || "this folder"}`}
+                          className="px-2.5 py-1 text-[11px] font-medium bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center gap-1 shadow-2xs cursor-pointer"
+                        >
+                          <Undo className="w-3 h-3" />
+                          <span>Undo</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center py-8 text-zinc-400 dark:text-zinc-500">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs font-medium">No icon updates recorded yet</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                    Changes you apply will appear in this history list.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex justify-end">
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

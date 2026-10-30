@@ -3,6 +3,9 @@ src-tauri/target
 src-tauri/*.key
 *.key
 .planning/
+.ai/
+brag-output/
+docs/superpowers/
 logs
 *.log
 npm-debug.log*

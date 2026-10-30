@@ -4,8 +4,8 @@
 
 # FolderPainter
 
-**Modern, open-source Windows folder customization studio.**  
-Transform default yellow directories into organized, color-coded, and beautifully themed workspaces.
+**The best free, open-source alternative to FolderIco.**  
+Modern Windows folder customization studio. Transform directories into organized, color-coded, and beautifully themed workspaces with zero background overhead.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6.svg)](https://microsoft.com/windows)
@@ -25,7 +25,19 @@ Transform default yellow directories into organized, color-coded, and beautifull
 
 ## Overview
 
-**FolderPainter** is a desktop application engineered to replace proprietary folder icon utilities with a free, open-source, and privacy-respecting tool. Built on **Tauri 2** and **Rust**, it integrates directly with the native Windows Shell API to deliver instant, persistent icon modifications without background processes or system overhead.
+**FolderPainter** is the premier free, open-source alternative to FolderIco and other proprietary folder customization utilities. Built from the ground up on **Tauri 2** and **Rust**, it delivers native Windows Shell integration (`SetFileAttributesW`, `SHChangeNotify`, and atomic `desktop.ini` configuration) with 100% free MIT licensing, zero telemetry, and zero resident background services.
+
+### Why FolderPainter over FolderIco?
+
+| Dimension | FolderIco | FolderPainter |
+|---|---|---|
+| **License** | Proprietary / Paid license required | **100% Free & Open Source (MIT)** |
+| **System Footprint** | Background tray process and services | **Zero background processes (runs only on demand)** |
+| **Telemetry & Privacy** | Proprietary binary, phone-home activation | **Completely offline, 0 tracking or telemetry** |
+| **Shell Integration** | Shell extension injection | **Native Win32 Shell API and desktop.ini standards** |
+| **Color Customization** | Fixed color presets | **Procedural HSL studio with infinite bespoke shades** |
+| **Catalog Depth** | Limited bundled icons | **5,000+ curated icons across 114 collections** |
+| **Performance** | Legacy C++ / MFC architecture | **Tauri 2 + Rust + React 19 high-performance stack** |
 
 ---
 
@@ -37,20 +49,29 @@ Transform default yellow directories into organized, color-coded, and beautifull
 - **Two-Tier Asset Caching:** High-speed IndexedDB and local file caching with infinite scroll loading.
 - **Safe Cache Management:** Purge cache anytime with modal confirmation and keyboard dismissal.
 
-### 2. Procedural Color & HSL Studio
-- **13 Windows Explorer Presets:** Calibrated shades (Cobalt Blue, Emerald Green, Crimson Red, Sunflower Yellow, Violet, Slate) optimized for high contrast against Explorer backgrounds.
+### 2. Interactive Icon Design Studio (FolderIco Studio Parity)
+- **Folder Flap Masking:** Upload any photo, texture, or brand graphic and mask it precisely onto the front flap of the Windows 11 folder (`x: 20..236, y: 82..222, rx: 16`), preserving the 3D back plate, top tab, and interior documents.
+- **Interactive Canvas Transformations:** Direct pointer manipulation on the 256x256 SVG canvas with 4 corner resize handles (`nw`, `ne`, `se`, `sw`) and center drag to pan in real time at 60 FPS.
+- **Floating Quick-Action Bar:** Instant fit mode switching (`Cover` fill flap, `Contain` fit inside, `Custom`) and layer removal.
+- **Full Emoji & Sticker Catalog:** Over 500 color emojis across 7 categories (Smileys, People, Animals, Food, Activities, Objects, Symbols) powered by native Windows Segoe UI Emoji, alongside developer vector icons with badge tinting.
+- **Multi-Resolution Native `.ico` Engine:** Mathematical alpha blending and Lanczos3 resampling in Rust compiling genuine Windows multi-res `.ico` binaries (16 to 256px).
+
+### 3. Procedural Color & HSL Studio
+- **12 Windows Explorer Presets:** Calibrated shades (Cobalt Blue, Emerald Green, Crimson Red, Sunflower Yellow, Violet, Slate) optimized for high contrast against Explorer backgrounds.
 - **Dynamic HSL Wheel:** Procedural color generator rendering bespoke folder icons for any Hue, Saturation, and Lightness combination.
 - **Custom Image Converter:** Convert arbitrary PNG, JPG, JPEG, WebP, or BMP images into multi-resolution `.ico` binaries preserving transparency and aspect ratios.
 
-### 3. Tree Recursion & Shell Maintenance
+### 4. Tree Recursion, Shell Maintenance & Selective Undo
 - **Apply to All Subfolders:** Toggle recursive processing to update entire directory trees in a single atomic action.
+- **Target Folder Icon Inspection:** Automatically inspects and previews the existing icon of any selected folder before modifications.
+- **Visual Undo & Redo History:** View visual history cards with before/after thumbnails, timestamps, and target paths.
+- **Specific Undo Targeting:** Revert any specific folder mutation from history without rolling back subsequent actions.
 - **Windows Icon Cache Repair:** Built-in repair utility to purge corrupted `IconCache.db` and Explorer thumbnail databases, issuing a shell-wide `SHCNE_ASSOCCHANGED` broadcast to force instant icon repaints.
 - **Atomic Desktop.ini Merging:** Preserves existing folder metadata (`[ViewState]`, localized folder names) while editing only the `[.ShellClassInfo]` section.
 
-### 4. Native Undo, Redo & Modern UI
-- **Persistent History:** Automatically saves mutation logs to disk across restarts.
-- **1:1 Authentic Previews:** Live preview card mirrors true Windows 10/11 folder geometry (back tab, paper sheet inserts, front flap).
+### 5. Modern UI & Performance
 - **Executive Dark & Light Theming:** Native Windows DWM titlebar synchronization with custom 6px translucent floating scrollbars.
+- **1:1 Authentic Previews:** Live preview card mirrors true Windows 10/11 folder geometry (back tab, paper sheet inserts, front flap).
 - **Cryptographic Auto-Updater:** Seamless in-app updates verified via Ed25519/Minisign signatures.
 
 ---
@@ -69,6 +90,7 @@ FolderPainter/
 │   │   ├── CachedIconImage.tsx       # IndexedDB and HTTP image cache renderer
 │   │   ├── ColorWheel.tsx            # Interactive procedural HSL color picker
 │   │   ├── CustomIconTab.tsx         # Drag-and-drop image-to-ICO converter
+│   │   ├── IconDesignerTab.tsx       # Interactive icon studio with cover masking & emoji stickers
 │   │   ├── IconGrid.tsx              # Authentic 3D folder rendering component
 │   │   └── IconLibraryTab.tsx        # Infinite-scrolling catalog browser
 │   ├── hooks/                        # Custom React state machines
@@ -83,6 +105,7 @@ FolderPainter/
 │   │   │   ├── color_icons.rs        # Procedural HSL generator and multi-res ICO builder
 │   │   │   ├── folder_icon.rs        # Directory traversal & icon assignment
 │   │   │   ├── icon_convert.rs       # Image rasterization to ICO format
+│   │   │   ├── icon_designer.rs      # Native multi-res compositor for custom covers & stickers
 │   │   │   ├── icon_library.rs       # Local catalog indexer & download cache
 │   │   │   ├── icon_repair.rs        # Windows Explorer shell cache repair
 │   │   │   ├── undo.rs               # Persistent undo/redo state manager

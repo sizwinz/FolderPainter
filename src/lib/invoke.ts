@@ -4,6 +4,9 @@ import type {
   CatalogResponse,
   CollectionsResponse,
   ConvertedIconResult,
+  DesignOptions,
+  DesignedIconResult,
+  FolderIconPreview,
   GeneratedIconResult,
   PresetColor,
   UndoEntry,
@@ -57,6 +60,14 @@ export async function generateColorIcon(
     hue,
     saturation,
     lightness,
+  });
+}
+
+export async function generateDesignedIcon(
+  options: DesignOptions
+): Promise<DesignedIconResult> {
+  return await invoke<DesignedIconResult>("generate_designed_icon", {
+    options,
   });
 }
 
@@ -132,8 +143,22 @@ export async function getCurrentIcon(
   });
 }
 
+export async function getFolderCurrentIconPreview(
+  folderPath: string
+): Promise<FolderIconPreview> {
+  return await invoke<FolderIconPreview>("get_folder_current_icon_preview", {
+    folderPath,
+  });
+}
+
 export async function undoLast(): Promise<UndoEntry | null> {
   return await invoke<UndoEntry | null>("undo_last");
+}
+
+export async function undoSpecific(entryId: string): Promise<UndoEntry | null> {
+  return await invoke<UndoEntry | null>("undo_specific", {
+    entryId,
+  });
 }
 
 export async function redoLast(): Promise<UndoEntry | null> {

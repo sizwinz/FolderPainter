@@ -50,12 +50,20 @@ pub struct CatalogResponse {
     pub items: Vec<IconItem>,
 }
 
+fn get_http_agent() -> ureq::Agent {
+    ureq::Agent::new_with_config(
+        ureq::config::Config::builder()
+            .timeout_global(Some(std::time::Duration::from_secs(6)))
+            .build(),
+    )
+}
+
 #[tauri::command]
 pub fn fetch_collections() -> Result<CollectionsResponse, String> {
     let cache_file = get_cache_dir()?.join("collections_cache.json");
 
     let url = "https://api.folderico.com/v1/icons/windows/win11/collections";
-    let body = match ureq::get(url).call() {
+    let body = match get_http_agent().get(url).call() {
         Ok(mut res) => {
             if let Ok(s) = res.body_mut().read_to_string() {
                 let _ = fs::write(&cache_file, &s);
@@ -116,7 +124,7 @@ pub fn fetch_icons(
         )
     };
 
-    match ureq::get(&url).call() {
+    match get_http_agent().get(&url).call() {
         Ok(mut res) => {
             if let Ok(body) = res.body_mut().read_to_string() {
                 if let Ok(catalog) = serde_json::from_str::<CatalogResponse>(&body) {
@@ -150,7 +158,8 @@ pub fn download_and_convert_icon(url: String) -> Result<String, String> {
         return Ok(out_path.to_string_lossy().to_string());
     }
 
-    let mut res = ureq::get(&url)
+    let mut res = get_http_agent()
+        .get(&url)
         .call()
         .map_err(|e| format!("Failed to download icon asset: {}", e))?;
 
