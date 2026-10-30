@@ -268,10 +268,10 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
   }, [selectedVectorId]);
 
   // Compute Cover Render Geometry on 256x256 Canvas
-  // Front flap center: (128, 136), bounds: [16..240, 62..210] (width: 224, height: 148, rx: 16)
+  // Front flap center: (128, 152), bounds: [20..236, 82..222] (width: 216, height: 140)
   const coverGeometry = useMemo(() => {
-    const flapW = 224;
-    const flapH = 148;
+    const flapW = 216;
+    const flapH = 140;
     const natW = coverNaturalSize.width || flapW;
     const natH = coverNaturalSize.height || flapH;
 
@@ -286,16 +286,16 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
     const w = natW * baseScale * coverScale;
     const h = natH * baseScale * coverScale;
     const x = 128 + coverOffsetX - w / 2;
-    const y = 136 + coverOffsetY - h / 2;
+    const y = 152 + coverOffsetY - h / 2;
 
     return { x, y, width: w, height: h };
   }, [coverNaturalSize, coverFitMode, coverScale, coverOffsetX, coverOffsetY]);
 
   // Compute Sticker Render Geometry on 256x256 Canvas
   const stickerGeometry = useMemo(() => {
-    const size = 224 * stickerScale;
+    const size = 216 * stickerScale;
     const x = 128 + stickerOffsetX - size / 2;
-    const y = 136 + stickerOffsetY - size / 2;
+    const y = 152 + stickerOffsetY - size / 2;
     return { x, y, size };
   }, [stickerScale, stickerOffsetX, stickerOffsetY]);
 
@@ -750,56 +750,36 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
               xmlns="http://www.w3.org/2000/svg"
             >
               <defs>
-                {/* Windows 11 Front Flap Mask: x: 16..240 (w:224), y: 62..210 (h:148), rx: 16 matching FolderIco */}
+                {/* Windows 11 Front Flap Mask: x: 20..236 (w:216), y: 82..222 (h:140), rx: 16 */}
                 <clipPath id="folder-front-flap-clip">
-                  <rect x="16" y="62" width="224" height="148" rx="16" ry="16" />
+                  <rect x="20" y="82" width="216" height="140" rx="16" ry="16" />
                 </clipPath>
               </defs>
 
               {/* 1. Back Tab & Back Body */}
               <path
-                d="M 20 44 C 20 38, 26 34, 34 34 L 102 34 C 108 34, 114 38, 118 44 L 126 58 L 228 58 C 235 58, 240 63, 240 70 L 240 206 C 240 214, 234 220, 226 220 L 20 220 Z"
+                d="M 24 46 C 24 40, 28 36, 36 36 L 100 36 C 106 36, 110 40, 114 46 L 122 56 L 224 56 C 230 56, 236 62, 236 68 L 236 216 C 236 224, 230 230, 222 230 L 24 230 Z"
                 fill={currentFolderHex}
                 fillOpacity="0.88"
               />
 
-              {/* 2. Drop Shadow under front cover */}
-              <rect x="18" y="206" width="220" height="10" rx="5" fill="#000000" opacity="0.16" />
+              {/* 2. Paper Sheet Peeking Out */}
+              <rect x="36" y="62" width="184" height="60" rx="4" fill="#FFFFFF" opacity="0.95" />
+              <line x1="56" y1="74" x2="130" y2="74" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="56" y1="84" x2="160" y2="84" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
 
-              {/* 3. Front Flap Base (Solid closed Windows 11 style matching FolderIco) */}
+              {/* 3. Drop Shadow under front cover */}
+              <rect x="20" y="218" width="216" height="14" rx="7" fill="#000000" opacity="0.18" />
+
+              {/* 4. Front Flap Base */}
               <rect
-                x="16"
-                y="62"
-                width="224"
-                height="148"
+                x="20"
+                y="82"
+                width="216"
+                height="140"
                 rx="16"
                 ry="16"
                 fill={currentFolderHex}
-                onClick={() => setActiveSubTab("color")}
-                className="cursor-pointer"
-              />
-
-              {/* Front flap specular highlight */}
-              <rect
-                x="18"
-                y="62"
-                width="220"
-                height="2"
-                rx="1"
-                fill="#FFFFFF"
-                fillOpacity="0.35"
-              />
-
-              {/* Subtle flap depth gradient */}
-              <rect
-                x="16"
-                y="62"
-                width="224"
-                height="148"
-                rx="16"
-                ry="16"
-                fill="#000000"
-                fillOpacity="0.04"
                 onClick={() => setActiveSubTab("color")}
                 className="cursor-pointer"
               />

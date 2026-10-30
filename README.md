@@ -50,7 +50,7 @@ Modern Windows folder customization studio. Transform directories into organized
 - **Safe Cache Management:** Purge cache anytime with modal confirmation and keyboard dismissal.
 
 ### 2. Interactive Icon Design Studio (FolderIco Studio Parity)
-- **Folder Flap Masking:** Upload any photo, texture, or brand graphic and mask it precisely onto the front flap of the Windows 11 folder (`x: 16..240, y: 62..210, rx: 16`), preserving the 3D back plate and top tab.
+- **Folder Flap Masking:** Upload any photo, texture, or brand graphic and mask it precisely onto the front flap of the Windows 11 folder (`x: 20..236, y: 82..222, rx: 16`), preserving the 3D back plate, top tab, and interior documents.
 - **Interactive Canvas Transformations:** Direct pointer manipulation on the 256x256 SVG canvas with 4 corner resize handles (`nw`, `ne`, `se`, `sw`) and center drag to pan in real time at 60 FPS.
 - **Floating Quick-Action Bar:** Instant fit mode switching (`Cover` fill flap, `Contain` fit inside, `Custom`) and layer removal.
 - **Full Emoji & Sticker Catalog:** Over 500 color emojis across 7 categories (Smileys, People, Animals, Food, Activities, Objects, Symbols) powered by native Windows Segoe UI Emoji, alongside developer vector icons with badge tinting.
@@ -71,7 +71,7 @@ Modern Windows folder customization studio. Transform directories into organized
 
 ### 5. Modern UI & Performance
 - **Executive Dark & Light Theming:** Native Windows DWM titlebar synchronization with custom 6px translucent floating scrollbars.
-- **1:1 Authentic Previews:** Live preview card mirrors true Windows 11 closed folder geometry matching FolderIco (back tab, solid front flap, and specular highlight).
+- **1:1 Authentic Previews:** Live preview card mirrors true Windows 10/11 folder geometry (back tab, paper sheet inserts, front flap).
 - **Cryptographic Auto-Updater & Restart:** Automatic background update check on startup with seamless one-click update & restart, verified via Ed25519/Minisign signatures.
 
 ---
