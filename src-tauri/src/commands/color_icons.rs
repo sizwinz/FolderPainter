@@ -110,6 +110,9 @@ pub fn list_preset_colors() -> Vec<PresetColor> {
     ]
 }
 
+pub const DEFAULT_WINDOWS_FOLDER_PNG: &[u8] = include_bytes!("../../assets/windows_default_folder.png");
+pub const ICO_YELLOW: &[u8] = include_bytes!("../../assets/windows11_folders/yellow.ico");
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneratedIconResult {
     pub icon_path: String,
@@ -118,8 +121,8 @@ pub struct GeneratedIconResult {
 
 #[tauri::command]
 pub fn get_default_folder_preview() -> Result<String, String> {
-    let img = render_folder_canvas(48.0, 0.98, 0.60);
-    encode_png_data_url(&img)
+    let b64 = base64_encode(DEFAULT_WINDOWS_FOLDER_PNG);
+    Ok(format!("data:image/png;base64,{}", b64))
 }
 
 #[tauri::command]
@@ -135,6 +138,19 @@ pub fn generate_color_icon(
 
     let filename = format!("folder_h{}_s{}_l{}.ico", h_int, s_int, l_int);
     let output_path = base_dir.join(filename);
+
+    // If default Windows yellow preset (hue 48.0, sat 0.98, lit 0.60)
+    if h_int == 480 && s_int == 98 && l_int == 60 {
+        if !output_path.exists() {
+            fs::write(&output_path, ICO_YELLOW)
+                .map_err(|e| format!("Failed to write icon file: {}", e))?;
+        }
+        let b64 = base64_encode(DEFAULT_WINDOWS_FOLDER_PNG);
+        return Ok(GeneratedIconResult {
+            icon_path: output_path.to_string_lossy().to_string(),
+            preview_data_url: format!("data:image/png;base64,{}", b64),
+        });
+    }
 
     let img256 = render_folder_canvas(hue, saturation, lightness);
     let preview_data_url = encode_png_data_url(&img256)?;

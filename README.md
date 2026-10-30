@@ -71,7 +71,7 @@ Modern Windows folder customization studio. Transform directories into organized
 
 ### 5. Modern UI & Performance
 - **Executive Dark & Light Theming:** Native Windows DWM titlebar synchronization with custom 6px translucent floating scrollbars.
-- **1:1 Authentic Previews:** Live preview card mirrors true Windows 10/11 folder geometry (back tab, paper sheet inserts, front flap).
+- **1:1 Authentic Windows 11 Previews:** Live preview card and color presets use the authentic Windows 11 default folder icon and color assets matching FolderIco.
 - **Cryptographic Auto-Updater & Restart:** Automatic background update check on startup with seamless one-click update & restart, verified via Ed25519/Minisign signatures.
 
 ---

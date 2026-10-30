@@ -46,6 +46,20 @@ import {
 import { generateDesignedIcon, selectImageDialog, getIconPreviewDataUrl } from "../lib/invoke";
 import type { DesignOptions } from "../lib/types";
 
+import azureFolderPng from "../assets/windows11_folders/azure.png";
+import blackFolderPng from "../assets/windows11_folders/black.png";
+import blueFolderPng from "../assets/windows11_folders/blue.png";
+import brownFolderPng from "../assets/windows11_folders/brown.png";
+import grayFolderPng from "../assets/windows11_folders/gray.png";
+import greenFolderPng from "../assets/windows11_folders/green.png";
+import lemonFolderPng from "../assets/windows11_folders/lemon.png";
+import orangeFolderPng from "../assets/windows11_folders/orange.png";
+import pinkFolderPng from "../assets/windows11_folders/pink.png";
+import redFolderPng from "../assets/windows11_folders/red.png";
+import violetFolderPng from "../assets/windows11_folders/violet.png";
+import whiteFolderPng from "../assets/windows11_folders/white.png";
+import yellowFolderPng from "../assets/windows11_folders/yellow.png";
+
 interface IconDesignerTabProps {
   onSelectDesignedIcon: (iconPath: string, previewUrl: string) => void;
 }
@@ -254,11 +268,23 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
   const svgCanvasRef = useRef<SVGSVGElement | null>(null);
   const hiddenSvgContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Current folder CSS color
-  const currentFolderHex = useMemo(() => {
-    return `hsl(${Math.round(folderHue)}, ${Math.round(folderSat * 100)}%, ${Math.round(
-      folderLit * 100
-    )}%)`;
+  // Authentic Windows 11 Folder Base Image
+  const currentFolderBaseImage = useMemo(() => {
+    // Check if hue/sat matches one of the preset colors
+    const h = Math.round(folderHue);
+    if (h >= 195 && h <= 205) return azureFolderPng;
+    if (h >= 206 && h <= 240) return blueFolderPng;
+    if (h >= 100 && h <= 150) return greenFolderPng;
+    if (h >= 75 && h <= 99) return lemonFolderPng;
+    if (h >= 350 || h <= 10) return redFolderPng;
+    if (h >= 320 && h <= 349) return pinkFolderPng;
+    if (h >= 260 && h <= 319) return violetFolderPng;
+    if (h >= 20 && h <= 40) return orangeFolderPng;
+    if (folderSat < 0.05 && folderLit < 0.3) return blackFolderPng;
+    if (folderSat < 0.25 && folderLit > 0.8) return whiteFolderPng;
+    if (folderSat < 0.25 && folderLit > 0.3 && folderLit < 0.7) return grayFolderPng;
+    if (h >= 11 && h <= 19) return brownFolderPng;
+    return yellowFolderPng;
   }, [folderHue, folderSat, folderLit]);
 
   // Selected Vector Component
@@ -268,10 +294,10 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
   }, [selectedVectorId]);
 
   // Compute Cover Render Geometry on 256x256 Canvas
-  // Front flap center: (128, 152), bounds: [20..236, 82..222] (width: 216, height: 140)
+  // Authentic Windows 11 flap bounds: [16..240, 62..210] (width: 224, height: 148, center: 128, 136)
   const coverGeometry = useMemo(() => {
-    const flapW = 216;
-    const flapH = 140;
+    const flapW = 224;
+    const flapH = 148;
     const natW = coverNaturalSize.width || flapW;
     const natH = coverNaturalSize.height || flapH;
 
@@ -286,16 +312,16 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
     const w = natW * baseScale * coverScale;
     const h = natH * baseScale * coverScale;
     const x = 128 + coverOffsetX - w / 2;
-    const y = 152 + coverOffsetY - h / 2;
+    const y = 136 + coverOffsetY - h / 2;
 
     return { x, y, width: w, height: h };
   }, [coverNaturalSize, coverFitMode, coverScale, coverOffsetX, coverOffsetY]);
 
   // Compute Sticker Render Geometry on 256x256 Canvas
   const stickerGeometry = useMemo(() => {
-    const size = 216 * stickerScale;
+    const size = 224 * stickerScale;
     const x = 128 + stickerOffsetX - size / 2;
-    const y = 152 + stickerOffsetY - size / 2;
+    const y = 136 + stickerOffsetY - size / 2;
     return { x, y, size };
   }, [stickerScale, stickerOffsetX, stickerOffsetY]);
 
@@ -750,38 +776,22 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
               xmlns="http://www.w3.org/2000/svg"
             >
               <defs>
-                {/* Windows 11 Front Flap Mask: x: 20..236 (w:216), y: 82..222 (h:140), rx: 16 */}
+                {/* Windows 11 Front Flap Mask: x: 16..240 (w:224), y: 62..210 (h:148), rx: 16 matching FolderIco */}
                 <clipPath id="folder-front-flap-clip">
-                  <rect x="20" y="82" width="216" height="140" rx="16" ry="16" />
+                  <rect x="16" y="62" width="224" height="148" rx="16" ry="16" />
                 </clipPath>
               </defs>
 
-              {/* 1. Back Tab & Back Body */}
-              <path
-                d="M 24 46 C 24 40, 28 36, 36 36 L 100 36 C 106 36, 110 40, 114 46 L 122 56 L 224 56 C 230 56, 236 62, 236 68 L 236 216 C 236 224, 230 230, 222 230 L 24 230 Z"
-                fill={currentFolderHex}
-                fillOpacity="0.88"
-              />
-
-              {/* 2. Paper Sheet Peeking Out */}
-              <rect x="36" y="62" width="184" height="60" rx="4" fill="#FFFFFF" opacity="0.95" />
-              <line x1="56" y1="74" x2="130" y2="74" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="56" y1="84" x2="160" y2="84" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-
-              {/* 3. Drop Shadow under front cover */}
-              <rect x="20" y="218" width="216" height="14" rx="7" fill="#000000" opacity="0.18" />
-
-              {/* 4. Front Flap Base */}
-              <rect
-                x="20"
-                y="82"
-                width="216"
-                height="140"
-                rx="16"
-                ry="16"
-                fill={currentFolderHex}
+              {/* 1. Authentic Windows 11 Folder Base Image */}
+              <image
+                href={currentFolderBaseImage}
+                x="0"
+                y="0"
+                width="256"
+                height="256"
+                preserveAspectRatio="xMidYMid meet"
                 onClick={() => setActiveSubTab("color")}
-                className="cursor-pointer"
+                className="cursor-pointer select-none"
               />
 
               {/* 5. Masked Cover Image Layer */}

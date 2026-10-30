@@ -100,10 +100,10 @@ fn simple_hash(s: &str) -> u64 {
 }
 
 fn is_in_front_flap(px: f32, py: f32) -> bool {
-    let front_left = 20.0;
-    let front_right = 236.0;
-    let front_top = 82.0;
-    let front_bottom = 222.0;
+    let front_left = 16.0;
+    let front_right = 240.0;
+    let front_top = 62.0;
+    let front_bottom = 210.0;
     let corner_radius = 16.0;
 
     if px < front_left || px > front_right || py < front_top || py > front_bottom {
@@ -147,7 +147,17 @@ fn is_in_front_flap(px: f32, py: f32) -> bool {
 #[tauri::command]
 pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResult, String> {
     // 1. Base Folder Canvas (256x256)
-    let mut canvas: RgbaImage = render_folder_canvas(options.hue, options.saturation, options.lightness);
+    let h_int = (options.hue.clamp(0.0, 360.0) * 10.0).round() as u32;
+    let s_int = (options.saturation.clamp(0.0, 1.0) * 100.0).round() as u32;
+    let l_int = (options.lightness.clamp(0.0, 1.0) * 100.0).round() as u32;
+
+    let mut canvas: RgbaImage = if h_int == 480 && s_int == 98 && l_int == 60 {
+        image::load_from_memory(crate::commands::color_icons::DEFAULT_WINDOWS_FOLDER_PNG)
+            .map(|i| i.to_rgba8())
+            .unwrap_or_else(|_| render_folder_canvas(options.hue, options.saturation, options.lightness))
+    } else {
+        render_folder_canvas(options.hue, options.saturation, options.lightness)
+    };
 
     // 2. Load Cover Image if provided and composite onto front flap
     let cover_img_opt: Option<RgbaImage> = if let Some(path_str) = &options.custom_cover_path {
@@ -175,8 +185,8 @@ pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResu
     if let Some(cover_rgba) = cover_img_opt {
         let (cw, ch) = (cover_rgba.width(), cover_rgba.height());
         if cw > 0 && ch > 0 {
-            let flap_w = 216.0f32;
-            let flap_h = 140.0f32;
+            let flap_w = 224.0f32;
+            let flap_h = 148.0f32;
             let fit_mode = options.cover_fit_mode.as_deref().unwrap_or("cover");
             let user_scale = options.cover_scale.unwrap_or(1.0).clamp(0.2, 5.0);
 
@@ -197,7 +207,7 @@ pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResu
             );
 
             let center_x = 128.0 + options.cover_offset_x.unwrap_or(0.0);
-            let center_y = 152.0 + options.cover_offset_y.unwrap_or(0.0);
+            let center_y = 136.0 + options.cover_offset_y.unwrap_or(0.0);
             let top_left_x = (center_x - (target_w as f32 / 2.0)).round() as i32;
             let top_left_y = (center_y - (target_h as f32 / 2.0)).round() as i32;
 
@@ -450,6 +460,10 @@ mod tests {
         let tab_pixel = decoded.get_pixel(50, 45);
         assert_ne!(tab_pixel[0], 255, "Folder tab pixel at (50, 45) should not be overwritten by cover");
         assert!(tab_pixel[2] > 100, "Folder tab pixel should preserve blue folder color");
+
+        // Front flap at (128, 120) MUST be red from the cover
+        let flap_pixel = decoded.get_pixel(128, 120);
+        assert_eq!(flap_pixel[0], 255, "Front flap pixel at (128, 120) should be covered by red cover");
 
         // Front flap center at (128, 150) must be red (cover is placed there)
         let flap_pixel = decoded.get_pixel(128, 150);

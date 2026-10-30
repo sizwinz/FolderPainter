@@ -8,46 +8,79 @@ interface IconGridProps {
   onSelectIcon: (iconPath: string, previewUrl: string, hex: string) => void;
 }
 
+import defaultFolderPng from "../assets/windows_default_folder.png";
+import azureFolderPng from "../assets/windows11_folders/azure.png";
+import blackFolderPng from "../assets/windows11_folders/black.png";
+import blueFolderPng from "../assets/windows11_folders/blue.png";
+import brownFolderPng from "../assets/windows11_folders/brown.png";
+import grayFolderPng from "../assets/windows11_folders/gray.png";
+import greenFolderPng from "../assets/windows11_folders/green.png";
+import lemonFolderPng from "../assets/windows11_folders/lemon.png";
+import orangeFolderPng from "../assets/windows11_folders/orange.png";
+import pinkFolderPng from "../assets/windows11_folders/pink.png";
+import redFolderPng from "../assets/windows11_folders/red.png";
+import violetFolderPng from "../assets/windows11_folders/violet.png";
+import whiteFolderPng from "../assets/windows11_folders/white.png";
+import yellowFolderPng from "../assets/windows11_folders/yellow.png";
+
+const FOLDER_COLOR_MAP: Record<string, string> = {
+  yellow: yellowFolderPng,
+  "#fdd835": yellowFolderPng,
+  "#ffe169": yellowFolderPng,
+  azure: azureFolderPng,
+  "#039be5": azureFolderPng,
+  "#0288d1": azureFolderPng,
+  black: blackFolderPng,
+  "#212121": blackFolderPng,
+  "#374151": blackFolderPng,
+  blue: blueFolderPng,
+  "#1e88e5": blueFolderPng,
+  "#1565c0": blueFolderPng,
+  "#3949ab": blueFolderPng,
+  brown: brownFolderPng,
+  "#6d4c41": brownFolderPng,
+  gray: grayFolderPng,
+  "#546e7a": grayFolderPng,
+  "#64748b": grayFolderPng,
+  green: greenFolderPng,
+  "#43a047": greenFolderPng,
+  "#2e7d32": greenFolderPng,
+  "#00897b": greenFolderPng,
+  lemon: lemonFolderPng,
+  "#7cb342": lemonFolderPng,
+  orange: orangeFolderPng,
+  "#fb8c00": orangeFolderPng,
+  "#ef6c00": orangeFolderPng,
+  pink: pinkFolderPng,
+  "#d81b60": pinkFolderPng,
+  "#ad1457": pinkFolderPng,
+  red: redFolderPng,
+  "#e53935": redFolderPng,
+  "#c62828": redFolderPng,
+  violet: violetFolderPng,
+  "#8e24aa": violetFolderPng,
+  "#6a1b9a": violetFolderPng,
+  white: whiteFolderPng,
+  "#e2e8f0": whiteFolderPng,
+};
+
 export function WindowsFolderIcon({
   color,
   className = "w-7 h-7",
 }: {
-  color: string;
+  color?: string;
   className?: string;
 }) {
+  const key = color?.toLowerCase().trim() || "yellow";
+  const iconSrc = FOLDER_COLOR_MAP[key] || defaultFolderPng;
+
   return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      {/* Back tab and back plate */}
-      <path
-        d="M4 11C4 9.34315 5.34315 8 7 8H19C20.6569 8 22 9.34315 22 11V13H41C42.6569 13 44 14.3431 44 16V36C44 37.6569 42.6569 39 41 39H7C5.34315 39 4 37.6569 4 36V11Z"
-        fill={color}
-        fillOpacity="0.82"
-      />
-      {/* Interior White Paper Insert */}
-      <rect x="9" y="11" width="30" height="18" rx="2" fill="#FFFFFF" />
-      <path
-        d="M14 15H25M14 18H32M14 21H28"
-        stroke="#CBD5E1"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      {/* Front Folder Flap */}
-      <rect x="4" y="16" width="40" height="23" rx="4" fill={color} />
-      <rect
-        x="4"
-        y="16"
-        width="40"
-        height="23"
-        rx="4"
-        fill="black"
-        fillOpacity="0.08"
-      />
-    </svg>
+    <img
+      src={iconSrc}
+      alt="Windows Folder"
+      className={`${className} object-contain select-none`}
+      draggable={false}
+    />
   );
 }
 
