@@ -268,23 +268,29 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
   const svgCanvasRef = useRef<SVGSVGElement | null>(null);
   const hiddenSvgContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Authentic Windows 11 Folder Base Image
-  const currentFolderBaseImage = useMemo(() => {
-    // Check if hue/sat matches one of the preset colors
+  // Authentic Windows 11 Folder Base Image & Custom HSL Tint Filter
+  const { folderBaseImage, folderBaseFilter } = useMemo(() => {
     const h = Math.round(folderHue);
-    if (h >= 195 && h <= 205) return azureFolderPng;
-    if (h >= 206 && h <= 240) return blueFolderPng;
-    if (h >= 100 && h <= 150) return greenFolderPng;
-    if (h >= 75 && h <= 99) return lemonFolderPng;
-    if (h >= 350 || h <= 10) return redFolderPng;
-    if (h >= 320 && h <= 349) return pinkFolderPng;
-    if (h >= 260 && h <= 319) return violetFolderPng;
-    if (h >= 20 && h <= 40) return orangeFolderPng;
-    if (folderSat < 0.05 && folderLit < 0.3) return blackFolderPng;
-    if (folderSat < 0.25 && folderLit > 0.8) return whiteFolderPng;
-    if (folderSat < 0.25 && folderLit > 0.3 && folderLit < 0.7) return grayFolderPng;
-    if (h >= 11 && h <= 19) return brownFolderPng;
-    return yellowFolderPng;
+    if (h >= 195 && h <= 204 && folderSat >= 0.8) return { folderBaseImage: azureFolderPng, folderBaseFilter: undefined };
+    if (h >= 205 && h <= 220 && folderSat >= 0.6) return { folderBaseImage: blueFolderPng, folderBaseFilter: undefined };
+    if (h >= 115 && h <= 135 && folderSat >= 0.3) return { folderBaseImage: greenFolderPng, folderBaseFilter: undefined };
+    if (h >= 80 && h <= 95 && folderSat >= 0.3) return { folderBaseImage: lemonFolderPng, folderBaseFilter: undefined };
+    if ((h >= 350 || h <= 10) && folderSat >= 0.6) return { folderBaseImage: redFolderPng, folderBaseFilter: undefined };
+    if (h >= 330 && h <= 348 && folderSat >= 0.6) return { folderBaseImage: pinkFolderPng, folderBaseFilter: undefined };
+    if (h >= 275 && h <= 300 && folderSat >= 0.5) return { folderBaseImage: violetFolderPng, folderBaseFilter: undefined };
+    if (h >= 25 && h <= 40 && folderSat >= 0.8) return { folderBaseImage: orangeFolderPng, folderBaseFilter: undefined };
+    if (folderSat < 0.05 && folderLit < 0.25) return { folderBaseImage: blackFolderPng, folderBaseFilter: undefined };
+    if (folderSat < 0.25 && folderLit > 0.85) return { folderBaseImage: whiteFolderPng, folderBaseFilter: undefined };
+    if (folderSat < 0.25 && folderLit >= 0.3 && folderLit <= 0.6) return { folderBaseImage: grayFolderPng, folderBaseFilter: undefined };
+    if (h >= 11 && h <= 19 && folderSat <= 0.35) return { folderBaseImage: brownFolderPng, folderBaseFilter: undefined };
+    if (h >= 45 && h <= 52 && folderSat >= 0.9) return { folderBaseImage: yellowFolderPng, folderBaseFilter: undefined };
+
+    // Custom HSL: use default yellow folder with real-time CSS filter
+    const hueRotate = Math.round(folderHue - 48);
+    const saturate = Math.round((folderSat / 0.95) * 100);
+    const brightness = Math.round((folderLit / 0.60) * 100);
+    const filter = `hue-rotate(${hueRotate}deg) saturate(${saturate}%) brightness(${brightness}%)`;
+    return { folderBaseImage: yellowFolderPng, folderBaseFilter: filter };
   }, [folderHue, folderSat, folderLit]);
 
   // Selected Vector Component
@@ -784,7 +790,8 @@ export const IconDesignerTab: React.FC<IconDesignerTabProps> = ({
 
               {/* 1. Authentic Windows 11 Folder Base Image */}
               <image
-                href={currentFolderBaseImage}
+                href={folderBaseImage}
+                style={folderBaseFilter ? { filter: folderBaseFilter } : undefined}
                 x="0"
                 y="0"
                 width="256"

@@ -1,5 +1,6 @@
 use crate::commands::color_icons::{
-    encode_multi_res_ico, encode_png_data_url, get_icons_cache_dir, render_folder_canvas,
+    base64_decode, encode_multi_res_ico, encode_png_data_url, get_icons_cache_dir,
+    tint_windows_folder,
 };
 use image::imageops::FilterType;
 use image::{Rgba, RgbaImage};
@@ -38,40 +39,6 @@ pub struct DesignedIconResult {
     pub preview_data_url: String,
 }
 
-fn base64_decode(s: &str) -> Option<Vec<u8>> {
-    let clean = s.trim();
-    let mut table = [255u8; 256];
-    for (i, &b) in b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-        .iter()
-        .enumerate()
-    {
-        table[b as usize] = i as u8;
-    }
-
-    let mut out = Vec::new();
-    let mut buffer = 0u32;
-    let mut bits = 0;
-
-    for &b in clean.as_bytes() {
-        if b == b'=' {
-            break;
-        }
-        if b.is_ascii_whitespace() {
-            continue;
-        }
-        let val = table[b as usize];
-        if val == 255 {
-            return None;
-        }
-        buffer = (buffer << 6) | (val as u32);
-        bits += 6;
-        if bits >= 8 {
-            bits -= 8;
-            out.push((buffer >> bits) as u8);
-        }
-    }
-    Some(out)
-}
 
 fn parse_hex_color(hex: &str) -> Option<(u8, u8, u8)> {
     let s = hex.trim().trim_start_matches('#');
@@ -146,18 +113,8 @@ fn is_in_front_flap(px: f32, py: f32) -> bool {
 
 #[tauri::command]
 pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResult, String> {
-    // 1. Base Folder Canvas (256x256)
-    let h_int = (options.hue.clamp(0.0, 360.0) * 10.0).round() as u32;
-    let s_int = (options.saturation.clamp(0.0, 1.0) * 100.0).round() as u32;
-    let l_int = (options.lightness.clamp(0.0, 1.0) * 100.0).round() as u32;
-
-    let mut canvas: RgbaImage = if h_int == 480 && s_int == 98 && l_int == 60 {
-        image::load_from_memory(crate::commands::color_icons::DEFAULT_WINDOWS_FOLDER_PNG)
-            .map(|i| i.to_rgba8())
-            .unwrap_or_else(|_| render_folder_canvas(options.hue, options.saturation, options.lightness))
-    } else {
-        render_folder_canvas(options.hue, options.saturation, options.lightness)
-    };
+    // 1. Base Folder Canvas (256x256): Always use authentic Windows default folder tinted with HSL
+    let mut canvas: RgbaImage = tint_windows_folder(options.hue, options.saturation, options.lightness);
 
     // 2. Load Cover Image if provided and composite onto front flap
     let cover_img_opt: Option<RgbaImage> = if let Some(path_str) = &options.custom_cover_path {

@@ -64,6 +64,46 @@ const FOLDER_COLOR_MAP: Record<string, string> = {
   "#e2e8f0": whiteFolderPng,
 };
 
+function hexToFilter(hex?: string): string | undefined {
+  if (!hex) return undefined;
+  const clean = hex.trim().replace(/^#/, "");
+  if (clean.length !== 6 && clean.length !== 3) return undefined;
+
+  const r = parseInt(clean.length === 3 ? clean[0] + clean[0] : clean.slice(0, 2), 16);
+  const g = parseInt(clean.length === 3 ? clean[1] + clean[1] : clean.slice(2, 4), 16);
+  const b = parseInt(clean.length === 3 ? clean[2] + clean[2] : clean.slice(4, 6), 16);
+
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return undefined;
+
+  const rf = r / 255;
+  const gf = g / 255;
+  const bf = b / 255;
+  const max = Math.max(rf, gf, bf);
+  const min = Math.min(rf, gf, bf);
+  const delta = max - min;
+  const l = (max + min) / 2;
+
+  if (delta === 0) {
+    return `grayscale(1) brightness(${Math.round((l / 0.6) * 100)}%)`;
+  }
+
+  const s = l <= 0.5 ? delta / (max + min) : delta / (2 - max - min);
+  let h = 0;
+  if (max === rf) {
+    h = 60 * (((gf - bf) / delta) + (gf < bf ? 6 : 0));
+  } else if (max === gf) {
+    h = 60 * (((bf - rf) / delta) + 2);
+  } else {
+    h = 60 * (((rf - gf) / delta) + 4);
+  }
+
+  const hueRotate = Math.round(h - 48);
+  const saturate = Math.round((s / 0.95) * 100);
+  const brightness = Math.round((l / 0.60) * 100);
+
+  return `hue-rotate(${hueRotate}deg) saturate(${saturate}%) brightness(${brightness}%)`;
+}
+
 export function WindowsFolderIcon({
   color,
   className = "w-7 h-7",
@@ -72,12 +112,15 @@ export function WindowsFolderIcon({
   className?: string;
 }) {
   const key = color?.toLowerCase().trim() || "yellow";
-  const iconSrc = FOLDER_COLOR_MAP[key] || defaultFolderPng;
+  const hasPreset = key in FOLDER_COLOR_MAP;
+  const iconSrc = hasPreset ? FOLDER_COLOR_MAP[key] : defaultFolderPng;
+  const filterStyle = !hasPreset && color?.startsWith("#") ? hexToFilter(color) : undefined;
 
   return (
     <img
       src={iconSrc}
       alt="Windows Folder"
+      style={filterStyle ? { filter: filterStyle } : undefined}
       className={`${className} object-contain select-none`}
       draggable={false}
     />

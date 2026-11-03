@@ -111,7 +111,94 @@ pub fn list_preset_colors() -> Vec<PresetColor> {
 }
 
 pub const DEFAULT_WINDOWS_FOLDER_PNG: &[u8] = include_bytes!("../../assets/windows_default_folder.png");
+
+// 13 Authentic Windows 11 Presets extracted from FolderIco
 pub const ICO_YELLOW: &[u8] = include_bytes!("../../assets/windows11_folders/yellow.ico");
+pub const PNG_YELLOW: &[u8] = include_bytes!("../../assets/windows11_folders/yellow.png");
+
+pub const ICO_AZURE: &[u8] = include_bytes!("../../assets/windows11_folders/azure.ico");
+pub const PNG_AZURE: &[u8] = include_bytes!("../../assets/windows11_folders/azure.png");
+
+pub const ICO_BLACK: &[u8] = include_bytes!("../../assets/windows11_folders/black.ico");
+pub const PNG_BLACK: &[u8] = include_bytes!("../../assets/windows11_folders/black.png");
+
+pub const ICO_BLUE: &[u8] = include_bytes!("../../assets/windows11_folders/blue.ico");
+pub const PNG_BLUE: &[u8] = include_bytes!("../../assets/windows11_folders/blue.png");
+
+pub const ICO_BROWN: &[u8] = include_bytes!("../../assets/windows11_folders/brown.ico");
+pub const PNG_BROWN: &[u8] = include_bytes!("../../assets/windows11_folders/brown.png");
+
+pub const ICO_GRAY: &[u8] = include_bytes!("../../assets/windows11_folders/gray.ico");
+pub const PNG_GRAY: &[u8] = include_bytes!("../../assets/windows11_folders/gray.png");
+
+pub const ICO_GREEN: &[u8] = include_bytes!("../../assets/windows11_folders/green.ico");
+pub const PNG_GREEN: &[u8] = include_bytes!("../../assets/windows11_folders/green.png");
+
+pub const ICO_LEMON: &[u8] = include_bytes!("../../assets/windows11_folders/lemon.ico");
+pub const PNG_LEMON: &[u8] = include_bytes!("../../assets/windows11_folders/lemon.png");
+
+pub const ICO_ORANGE: &[u8] = include_bytes!("../../assets/windows11_folders/orange.ico");
+pub const PNG_ORANGE: &[u8] = include_bytes!("../../assets/windows11_folders/orange.png");
+
+pub const ICO_PINK: &[u8] = include_bytes!("../../assets/windows11_folders/pink.ico");
+pub const PNG_PINK: &[u8] = include_bytes!("../../assets/windows11_folders/pink.png");
+
+pub const ICO_RED: &[u8] = include_bytes!("../../assets/windows11_folders/red.ico");
+pub const PNG_RED: &[u8] = include_bytes!("../../assets/windows11_folders/red.png");
+
+pub const ICO_VIOLET: &[u8] = include_bytes!("../../assets/windows11_folders/violet.ico");
+pub const PNG_VIOLET: &[u8] = include_bytes!("../../assets/windows11_folders/violet.png");
+
+pub const ICO_WHITE: &[u8] = include_bytes!("../../assets/windows11_folders/white.ico");
+pub const PNG_WHITE: &[u8] = include_bytes!("../../assets/windows11_folders/white.png");
+
+pub fn get_authentic_preset(hue: f32, sat: f32, lit: f32) -> Option<(&'static [u8], &'static [u8])> {
+    let h_int = (hue.clamp(0.0, 360.0) * 10.0).round() as u32;
+    let s_int = (sat.clamp(0.0, 1.0) * 100.0).round() as u32;
+    let l_int = (lit.clamp(0.0, 1.0) * 100.0).round() as u32;
+
+    if (h_int >= 460 && h_int <= 500) && s_int >= 90 && l_int >= 55 {
+        return Some((ICO_YELLOW, PNG_YELLOW));
+    }
+    if (h_int >= 1950 && h_int <= 2040) && s_int >= 90 && l_int >= 40 && l_int <= 50 {
+        return Some((ICO_AZURE, PNG_AZURE));
+    }
+    if (h_int >= 2050 && h_int <= 2150) && s_int >= 70 && l_int >= 45 && l_int <= 55 {
+        return Some((ICO_BLUE, PNG_BLUE));
+    }
+    if (h_int >= 1180 && h_int <= 1300) && s_int >= 35 && s_int <= 50 && l_int >= 40 && l_int <= 50 {
+        return Some((ICO_GREEN, PNG_GREEN));
+    }
+    if (h_int >= 800 && h_int <= 950) && s_int >= 40 && s_int <= 60 && l_int >= 40 && l_int <= 55 {
+        return Some((ICO_LEMON, PNG_LEMON));
+    }
+    if (h_int >= 280 && h_int <= 380) && s_int >= 90 && l_int >= 45 && l_int <= 55 {
+        return Some((ICO_ORANGE, PNG_ORANGE));
+    }
+    if (h_int >= 3500 || h_int <= 100) && s_int >= 70 && l_int >= 50 && l_int <= 60 {
+        return Some((ICO_RED, PNG_RED));
+    }
+    if (h_int >= 3300 && h_int <= 3450) && s_int >= 70 && l_int >= 42 && l_int <= 54 {
+        return Some((ICO_PINK, PNG_PINK));
+    }
+    if (h_int >= 2800 && h_int <= 2950) && s_int >= 55 && s_int <= 75 && l_int >= 35 && l_int <= 45 {
+        return Some((ICO_VIOLET, PNG_VIOLET));
+    }
+    if (h_int >= 100 && h_int <= 180) && s_int <= 30 && l_int >= 28 && l_int <= 40 {
+        return Some((ICO_BROWN, PNG_BROWN));
+    }
+    if (h_int >= 1900 && h_int <= 2100) && s_int <= 25 && l_int >= 35 && l_int <= 45 {
+        return Some((ICO_GRAY, PNG_GRAY));
+    }
+    if s_int <= 5 && l_int <= 20 {
+        return Some((ICO_BLACK, PNG_BLACK));
+    }
+    if s_int <= 25 && l_int >= 88 {
+        return Some((ICO_WHITE, PNG_WHITE));
+    }
+
+    None
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneratedIconResult {
@@ -139,20 +226,19 @@ pub fn generate_color_icon(
     let filename = format!("folder_h{}_s{}_l{}.ico", h_int, s_int, l_int);
     let output_path = base_dir.join(filename);
 
-    // If default Windows yellow preset (hue 48.0, sat 0.98, lit 0.60)
-    if h_int == 480 && s_int == 98 && l_int == 60 {
+    if let Some((ico_bytes, png_bytes)) = get_authentic_preset(hue, saturation, lightness) {
         if !output_path.exists() {
-            fs::write(&output_path, ICO_YELLOW)
+            fs::write(&output_path, ico_bytes)
                 .map_err(|e| format!("Failed to write icon file: {}", e))?;
         }
-        let b64 = base64_encode(DEFAULT_WINDOWS_FOLDER_PNG);
+        let b64 = base64_encode(png_bytes);
         return Ok(GeneratedIconResult {
             icon_path: output_path.to_string_lossy().to_string(),
             preview_data_url: format!("data:image/png;base64,{}", b64),
         });
     }
 
-    let img256 = render_folder_canvas(hue, saturation, lightness);
+    let img256 = tint_windows_folder(hue, saturation, lightness);
     let preview_data_url = encode_png_data_url(&img256)?;
 
     if !output_path.exists() {
@@ -211,122 +297,101 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
     )
 }
 
-pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaImage {
-    let width = 256;
-    let height = 256;
-    let mut img = RgbaImage::new(width, height);
+fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
+    let rf = r as f32 / 255.0;
+    let gf = g as f32 / 255.0;
+    let bf = b as f32 / 255.0;
 
-    let back_rgb = hsl_to_rgb(hue, saturation * 0.95, (lightness - 0.12).clamp(0.05, 0.95));
-    let tab_rgb = hsl_to_rgb(hue, saturation * 0.90, (lightness - 0.08).clamp(0.05, 0.95));
-    let slot_rgb = hsl_to_rgb(hue, saturation * 0.30, 0.92);
+    let max = rf.max(gf).max(bf);
+    let min = rf.min(gf).min(bf);
+    let delta = max - min;
 
-    // 1. Draw back tab and back plate
+    let l = (max + min) / 2.0;
+
+    if delta == 0.0 {
+        return (0.0, 0.0, l);
+    }
+
+    let s = if l <= 0.5 {
+        delta / (max + min)
+    } else {
+        delta / (2.0 - max - min)
+    };
+
+    let h = if max == rf {
+        let seg = (gf - bf) / delta;
+        60.0 * (if seg < 0.0 { seg + 6.0 } else { seg })
+    } else if max == gf {
+        60.0 * (((bf - rf) / delta) + 2.0)
+    } else {
+        60.0 * (((rf - gf) / delta) + 4.0)
+    };
+
+    (h.rem_euclid(360.0), s.clamp(0.0, 1.0), l.clamp(0.0, 1.0))
+}
+
+pub fn tint_windows_folder(target_hue: f32, target_sat: f32, target_lit: f32) -> RgbaImage {
+    // If it matches an authentic preset exactly, return its decoded RGBA image directly
+    if let Some((_, png_bytes)) = get_authentic_preset(target_hue, target_sat, target_lit) {
+        if let Ok(img) = image::load_from_memory(png_bytes) {
+            return img.to_rgba8();
+        }
+    }
+
+    let default_img = image::load_from_memory(DEFAULT_WINDOWS_FOLDER_PNG)
+        .expect("Valid embedded windows_default_folder.png")
+        .to_rgba8();
+
+    let (width, height) = default_img.dimensions();
+    let mut tinted = RgbaImage::new(width, height);
+
+    let h_clamped = (target_hue % 360.0 + 360.0) % 360.0;
+    let s_clamped = target_sat.clamp(0.0, 1.0);
+    let l_clamped = target_lit.clamp(0.0, 1.0);
+
     for y in 0..height {
         for x in 0..width {
-            let px = x as f32;
-            let py = y as f32;
-
-            // Back tab (x: 24..112, y: 38..74)
-            let in_tab = px >= 24.0 && px <= 112.0 && py >= 38.0 && py <= 74.0;
-            // Back body (x: 24..232, y: 56..216)
-            let in_back = px >= 24.0 && px <= 232.0 && py >= 56.0 && py <= 216.0;
-
-            if in_tab || in_back {
-                let color = if in_tab && py < 56.0 {
-                    tab_rgb
-                } else {
-                    back_rgb
-                };
-                img.put_pixel(x, y, Rgba([color.0, color.1, color.2, 255]));
-            }
-        }
-    }
-
-    // 2. Interior slot/paper sheet peeking through
-    for y in 66..88 {
-        for x in 38..218 {
-            img.put_pixel(x, y, Rgba([slot_rgb.0, slot_rgb.1, slot_rgb.2, 240]));
-        }
-    }
-
-    // 3. Drop shadow under front cover (y: 220..232)
-    for y in 220..232 {
-        for x in 24..232 {
-            let dist_y = (y - 220) as f32;
-            let alpha = ((1.0 - dist_y / 12.0) * 80.0) as u8;
-            let curr = img.get_pixel(x, y);
-            if curr[3] == 0 {
-                img.put_pixel(x, y, Rgba([0, 0, 0, alpha]));
-            }
-        }
-    }
-
-    // 4. Draw front cover with rounded corners and gradient
-    let front_left = 20.0;
-    let front_right = 236.0;
-    let front_top = 82.0;
-    let front_bottom = 222.0;
-    let corner_radius = 16.0;
-
-    for y in 82..224 {
-        for x in 20..238 {
-            let px = x as f32;
-            let py = y as f32;
-
-            let in_bounds =
-                px >= front_left && px <= front_right && py >= front_top && py <= front_bottom;
-            if !in_bounds {
+            let p = default_img.get_pixel(x, y);
+            let alpha = p[3];
+            if alpha == 0 {
                 continue;
             }
 
-            let mut corner_dist_sq = 0.0;
-            let is_top_left = px < front_left + corner_radius && py < front_top + corner_radius;
-            let is_top_right = px > front_right - corner_radius && py < front_top + corner_radius;
-            let is_bottom_left =
-                px < front_left + corner_radius && py > front_bottom - corner_radius;
-            let is_bottom_right =
-                px > front_right - corner_radius && py > front_bottom - corner_radius;
+            let (src_h, src_s, src_l) = rgb_to_hsl(p[0], p[1], p[2]);
 
-            if is_top_left {
-                let dx = px - (front_left + corner_radius);
-                let dy = py - (front_top + corner_radius);
-                corner_dist_sq = dx * dx + dy * dy;
-            } else if is_top_right {
-                let dx = px - (front_right - corner_radius);
-                let dy = py - (front_top + corner_radius);
-                corner_dist_sq = dx * dx + dy * dy;
-            } else if is_bottom_left {
-                let dx = px - (front_left + corner_radius);
-                let dy = py - (front_bottom - corner_radius);
-                corner_dist_sq = dx * dx + dy * dy;
-            } else if is_bottom_right {
-                let dx = px - (front_right - corner_radius);
-                let dy = py - (front_bottom - corner_radius);
-                corner_dist_sq = dx * dx + dy * dy;
+            // Keep bottom drop shadows neutral
+            if src_s < 0.12 && src_l < 0.25 {
+                tinted.put_pixel(x, y, *p);
+                continue;
             }
 
-            if corner_dist_sq <= corner_radius * corner_radius {
-                let progress_y = (py - front_top) / (front_bottom - front_top);
-                let grad_l = (lightness + (0.06 - progress_y * 0.12)).clamp(0.05, 0.95);
-                let rgb = hsl_to_rgb(hue, saturation, grad_l);
+            // Authentic folder body tinting
+            let hue_delta = src_h - 48.0;
+            let new_h = (h_clamped + hue_delta).rem_euclid(360.0);
 
-                // Top bevel highlight
-                let final_rgb = if py <= front_top + 2.0 {
-                    (
-                        ((rgb.0 as f32 * 0.8 + 255.0 * 0.2).min(255.0)) as u8,
-                        ((rgb.1 as f32 * 0.8 + 255.0 * 0.2).min(255.0)) as u8,
-                        ((rgb.2 as f32 * 0.8 + 255.0 * 0.2).min(255.0)) as u8,
-                    )
-                } else {
-                    rgb
-                };
+            let new_s = if s_clamped == 0.0 {
+                0.0
+            } else {
+                (src_s * (s_clamped / 0.95)).clamp(0.0, 1.0)
+            };
 
-                img.put_pixel(x, y, Rgba([final_rgb.0, final_rgb.1, final_rgb.2, 255]));
+            let new_l = if l_clamped <= 0.60 {
+                src_l * (l_clamped / 0.60)
+            } else {
+                src_l + (1.0 - src_l) * ((l_clamped - 0.60) / 0.40)
             }
+            .clamp(0.0, 1.0);
+
+            let (r, g, b) = hsl_to_rgb(new_h, new_s, new_l);
+            tinted.put_pixel(x, y, Rgba([r, g, b, alpha]));
         }
     }
 
-    img
+    tinted
+}
+
+pub fn render_folder_canvas(hue: f32, saturation: f32, lightness: f32) -> RgbaImage {
+    tint_windows_folder(hue, saturation, lightness)
 }
 
 pub fn encode_multi_res_ico(source_256: &RgbaImage) -> Result<Vec<u8>, image::ImageError> {
@@ -388,6 +453,41 @@ pub fn encode_multi_res_ico(source_256: &RgbaImage) -> Result<Vec<u8>, image::Im
     Ok(ico)
 }
 
+pub fn base64_decode(s: &str) -> Option<Vec<u8>> {
+    let clean = s.trim();
+    let mut table = [255u8; 256];
+    for (i, &b) in b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        .iter()
+        .enumerate()
+    {
+        table[b as usize] = i as u8;
+    }
+
+    let mut out = Vec::new();
+    let mut buffer = 0u32;
+    let mut bits = 0;
+
+    for &b in clean.as_bytes() {
+        if b == b'=' {
+            break;
+        }
+        if b.is_ascii_whitespace() {
+            continue;
+        }
+        let val = table[b as usize];
+        if val == 255 {
+            return None;
+        }
+        buffer = (buffer << 6) | (val as u32);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buffer >> bits) as u8);
+        }
+    }
+    Some(out)
+}
+
 const BASE64_ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 pub fn base64_encode(bytes: &[u8]) -> String {
@@ -438,6 +538,26 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    fn test_tint_windows_folder_uses_default_icon_and_preserves_alpha_and_silhouette() {
+        let tinted = tint_windows_folder(210.0, 0.85, 0.55);
+        assert_eq!(tinted.width(), 256);
+        assert_eq!(tinted.height(), 256);
+
+        // Corner must be transparent (not a full canvas box)
+        let corner_pixel = tinted.get_pixel(0, 0);
+        assert_eq!(corner_pixel[3], 0, "Top-left corner must be transparent");
+
+        // Front flap center must be opaque and tinted to blue
+        let flap_pixel = tinted.get_pixel(128, 120);
+        assert_eq!(flap_pixel[3], 255, "Folder flap must be opaque");
+        assert!(flap_pixel[2] > flap_pixel[0], "Blue channel must dominate for 210 hue");
+
+        // Authentic folder has no synthetic white paper slot at (100, 75)
+        let slot_pixel = tinted.get_pixel(100, 75);
+        assert!(slot_pixel[2] > slot_pixel[0], "Position (100, 75) must be folder body, not white paper");
+    }
+
+    #[test]
     fn test_encode_png_data_url_valid() {
         let img = render_folder_canvas(48.0, 0.98, 0.60);
         let data_url = encode_png_data_url(&img).unwrap();
@@ -452,6 +572,11 @@ mod tests {
 
         assert!(icon_path.exists(), "Generated icon file should exist");
         assert!(res.preview_data_url.starts_with("data:image/png;base64,"));
+        let b64 = res.preview_data_url.split(',').nth(1).unwrap();
+        let decoded_bytes = base64_decode(b64).expect("valid base64");
+        let decoded = image::load_from_memory(&decoded_bytes).expect("load image").to_rgba8();
+        assert_eq!(decoded.get_pixel(0, 0)[3], 0, "Top-left corner must be transparent");
+
         let bytes = fs::read(icon_path).unwrap();
         assert!(bytes.len() > 100, "ICO file should contain icon data");
         assert_eq!(
