@@ -92,8 +92,6 @@ impl UndoManager {
 
         let preview_data_url = if let Some(icon_path) = &new {
             crate::commands::icon_convert::get_icon_preview_data_url(icon_path.clone()).ok()
-        } else if let Some(prev_path) = &prev {
-            crate::commands::icon_convert::get_icon_preview_data_url(prev_path.clone()).ok()
         } else {
             crate::commands::color_icons::get_default_folder_preview().ok()
         };

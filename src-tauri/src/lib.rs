@@ -8,6 +8,7 @@ use commands::folder_icon::{apply_icon, get_current_icon, get_folder_current_ico
 use commands::icon_convert::{convert_image_to_icon, get_icon_preview_data_url};
 use commands::icon_library::{
     clear_icon_cache, download_and_convert_icon, fetch_collections, fetch_icons,
+    fetch_sticker_collections, fetch_stickers,
 };
 use commands::undo::{
     UndoManager, UndoManagerState, apply_icon_tracked, get_undo_state, redo_last,
@@ -44,6 +45,8 @@ pub fn run() {
             get_undo_state,
             fetch_collections,
             fetch_icons,
+            fetch_sticker_collections,
+            fetch_stickers,
             download_and_convert_icon,
             clear_icon_cache,
             repair_icon_cache,

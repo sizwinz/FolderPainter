@@ -14,7 +14,6 @@ import {
   Info,
   Sparkles,
   Palette,
-  Sliders,
   Image,
   ArrowDownCircle,
   Download,
@@ -25,6 +24,7 @@ import {
 import logoUrl from "./assets/logo.png";
 import { IconLibraryTab } from "./components/IconLibraryTab";
 import { IconGrid, WindowsFolderIcon } from "./components/IconGrid";
+import { CachedIconImage } from "./components/CachedIconImage";
 import { ColorWheel } from "./components/ColorWheel";
 import { CustomIconTab } from "./components/CustomIconTab";
 import { IconDesignerTab } from "./components/IconDesignerTab";
@@ -38,6 +38,11 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   const updater = useUpdater();
   const [currentTab, setCurrentTab] = useState<MainTabType>("library");
+  const [syncedHsl, setSyncedHsl] = useState<{
+    hue: number;
+    saturation: number;
+    lightness: number;
+  } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -79,6 +84,7 @@ export default function App() {
     selectCustomImagePath,
     apply,
     restore,
+    resetToDefaultIcon,
     undo,
     redo,
     undoSpecificEntry,
@@ -134,9 +140,12 @@ export default function App() {
     }
   };
 
+  const hasStagedSelection = Boolean(
+    selectedIconPath || isPreparingIcon || (!showingFolderCurrentIcon && previewColorHex)
+  );
   const canApply = Boolean(
     selectedFolder &&
-      (selectedIconPath || (!showingFolderCurrentIcon && (previewImageUrl || previewColorHex))) &&
+      selectedIconPath &&
       !isApplying &&
       !isPreparingIcon &&
       !showingFolderCurrentIcon
@@ -175,14 +184,30 @@ export default function App() {
           </div>
 
           {/* Big Folder Preview Box */}
-          <div className="w-full h-34 lg:h-40 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-2.5 shadow-xs relative">
-            {isPreparingIcon ? (
-              <div className="flex flex-col items-center gap-2 text-zinc-400">
-                <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
-                <span className="text-[11px] font-medium">Preparing Icon...</span>
+          <div className="w-full h-34 lg:h-40 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center p-2.5 shadow-xs relative overflow-hidden">
+            {isPreparingIcon && (
+              <div
+                title="Converting icon..."
+                className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50/80 dark:bg-blue-950/80 border border-blue-200/60 dark:border-blue-900/60 text-blue-600 dark:text-blue-400 text-[10px] font-medium z-10"
+              >
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Preparing...</span>
               </div>
-            ) : previewImageUrl ? (
-              <img
+            )}
+
+            {hasStagedSelection && (
+              <button
+                type="button"
+                onClick={resetToDefaultIcon}
+                title="Reset preview to default Windows folder"
+                className="absolute top-2 right-2 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors z-10"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {previewImageUrl ? (
+              <CachedIconImage
                 src={previewImageUrl}
                 alt="Selected folder preview"
                 className="w-20 h-20 lg:w-24 lg:h-24 object-contain drop-shadow-md transition-transform hover:scale-105"
@@ -194,7 +219,6 @@ export default function App() {
               />
             ) : (
               <WindowsFolderIcon
-                color="#FDD835"
                 className="w-20 h-20 lg:w-24 lg:h-24 drop-shadow-md transition-transform hover:scale-105"
               />
             )}
@@ -210,9 +234,13 @@ export default function App() {
                     Active: Standard Folder
                   </span>
                 )
-              ) : (
+              ) : hasStagedSelection ? (
                 <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-900">
                   New Icon Ready to Apply
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                  Default Windows Folder
                 </span>
               )}
             </div>
@@ -244,7 +272,7 @@ export default function App() {
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <WindowsFolderIcon color="#FDD835" className="w-5 h-5" />
+                    <WindowsFolderIcon className="w-5 h-5" />
                   )}
                 </div>
 
@@ -313,9 +341,9 @@ export default function App() {
             <button
               onClick={restore}
               disabled={!canRestore}
-              className="w-full py-2 px-3 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2 px-3 text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <WindowsFolderIcon className="w-4 h-4 shrink-0" />
               <span>Restore Default Icon</span>
             </button>
           </div>
@@ -362,14 +390,16 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded bg-zinc-100 dark:bg-zinc-800 p-0.5 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
-                  {undoInfo.last_undo.preview_data_url ? (
+                  {undoInfo.last_undo.action_type === "restore" ? (
+                    <WindowsFolderIcon className="w-5 h-5" />
+                  ) : undoInfo.last_undo.preview_data_url ? (
                     <img
                       src={undoInfo.last_undo.preview_data_url}
                       alt="Last updated icon"
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <WindowsFolderIcon color="#FDD835" className="w-4 h-4" />
+                    <WindowsFolderIcon className="w-4 h-4" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
@@ -451,7 +481,7 @@ export default function App() {
               }`}
             >
               <Palette className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden md:inline">Color Presets</span>
+              <span className="hidden md:inline">Color &amp; HSL</span>
               <span className="md:hidden">Colors</span>
             </button>
 
@@ -466,19 +496,6 @@ export default function App() {
               <Wand2 className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden md:inline">Icon Designer</span>
               <span className="md:hidden">Designer</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab("custom_color")}
-              className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                currentTab === "custom_color"
-                  ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden md:inline">Custom HSL</span>
-              <span className="md:hidden">Custom</span>
             </button>
 
             <button
@@ -642,11 +659,18 @@ export default function App() {
           )}
 
           {currentTab === "presets" && (
-            <div className="overflow-y-auto h-full pr-2">
+            <div className="overflow-y-auto h-full pr-2 space-y-6">
               <IconGrid
                 selectedIconPath={selectedIconPath}
                 onSelectIcon={selectColorPreset}
+                onSyncHsl={setSyncedHsl}
               />
+              <div className="pt-5 border-t border-zinc-200 dark:border-zinc-800">
+                <ColorWheel
+                  onSelectIcon={selectColorPreset}
+                  syncedHsl={syncedHsl}
+                />
+              </div>
             </div>
           )}
 
@@ -656,12 +680,6 @@ export default function App() {
                 selectCustomImagePath(iconPath, previewUrl);
               }}
             />
-          )}
-
-          {currentTab === "custom_color" && (
-            <div className="overflow-y-auto h-full pr-2">
-              <ColorWheel onSelectIcon={selectColorPreset} />
-            </div>
           )}
 
           {currentTab === "import_image" && (
@@ -704,14 +722,16 @@ export default function App() {
                       className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 flex items-center gap-3"
                     >
                       <div className="w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 p-1 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
-                        {entry.preview_data_url ? (
+                        {entry.action_type === "restore" ? (
+                          <WindowsFolderIcon className="w-6 h-6" />
+                        ) : entry.preview_data_url ? (
                           <img
                             src={entry.preview_data_url}
                             alt="Entry icon"
                             className="w-full h-full object-contain"
                           />
                         ) : (
-                          <WindowsFolderIcon color="#FDD835" className="w-6 h-6" />
+                          <WindowsFolderIcon className="w-6 h-6" />
                         )}
                       </div>
 

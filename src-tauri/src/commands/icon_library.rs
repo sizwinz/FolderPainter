@@ -50,7 +50,7 @@ pub struct CatalogResponse {
     pub items: Vec<IconItem>,
 }
 
-fn get_http_agent() -> ureq::Agent {
+pub(crate) fn get_http_agent() -> ureq::Agent {
     ureq::Agent::new_with_config(
         ureq::config::Config::builder()
             .timeout_global(Some(std::time::Duration::from_secs(6)))
@@ -86,6 +86,94 @@ pub fn fetch_collections() -> Result<CollectionsResponse, String> {
     };
 
     serde_json::from_str::<CollectionsResponse>(&body).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn fetch_sticker_collections() -> Result<CollectionsResponse, String> {
+    let cache_file = get_cache_dir()?.join("sticker_collections_cache.json");
+
+    let url = "https://api.folderico.com/v1/stickers/collections";
+    let body = match get_http_agent().get(url).call() {
+        Ok(mut res) => {
+            if let Ok(s) = res.body_mut().read_to_string() {
+                let _ = fs::write(&cache_file, &s);
+                s
+            } else if cache_file.exists() {
+                fs::read_to_string(&cache_file).map_err(|e| e.to_string())?
+            } else {
+                return Err("Failed to read response body".to_string());
+            }
+        }
+        Err(_) => {
+            if cache_file.exists() {
+                fs::read_to_string(&cache_file).map_err(|e| e.to_string())?
+            } else {
+                return Err(
+                    "Failed to connect to sticker collection service and no cache exists".to_string(),
+                );
+            }
+        }
+    };
+
+    serde_json::from_str::<CollectionsResponse>(&body).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn fetch_stickers(
+    offset: u32,
+    limit: u32,
+    query: Option<String>,
+    collection_id: Option<String>,
+) -> Result<CatalogResponse, String> {
+    let cache_dir = get_cache_dir()?;
+    let query_ref = query.as_deref();
+    let col_ref = collection_id.as_deref().filter(|s| !s.trim().is_empty() && *s != "all");
+
+    if let Some(cached) = load_sticker_catalog_cache(&cache_dir, offset, limit, query_ref, col_ref) {
+        let file_path = cache_dir.join(get_sticker_catalog_cache_filename(offset, limit, query_ref, col_ref));
+        if let Ok(metadata) = fs::metadata(&file_path) {
+            if let Ok(modified) = metadata.modified() {
+                if let Ok(elapsed) = modified.elapsed() {
+                    if elapsed.as_secs() < 86400 {
+                        return Ok(cached);
+                    }
+                }
+            }
+        }
+    }
+
+    let mut url = format!(
+        "https://api.folderico.com/v1/stickers?offset={}&limit={}",
+        offset, limit
+    );
+    if let Some(q) = query_ref.filter(|s| !s.trim().is_empty()) {
+        url.push_str(&format!("&query={}", urlencoding(q)));
+    }
+    if let Some(cid) = col_ref {
+        url.push_str(&format!("&collectionId={}", urlencoding(cid)));
+    }
+
+    match get_http_agent().get(&url).call() {
+        Ok(mut res) => {
+            if let Ok(body) = res.body_mut().read_to_string() {
+                if let Ok(catalog) = serde_json::from_str::<CatalogResponse>(&body) {
+                    let _ = save_sticker_catalog_cache(&cache_dir, offset, limit, query_ref, col_ref, &catalog);
+                    return Ok(catalog);
+                }
+            }
+        }
+        Err(_) => {
+            if let Some(cached) = load_sticker_catalog_cache(&cache_dir, offset, limit, query_ref, col_ref) {
+                return Ok(cached);
+            }
+        }
+    }
+
+    if let Some(cached) = load_sticker_catalog_cache(&cache_dir, offset, limit, query_ref, col_ref) {
+        return Ok(cached);
+    }
+
+    Err("Failed to fetch sticker catalog and no cached data is available".to_string())
 }
 
 #[tauri::command]
@@ -277,6 +365,46 @@ pub fn load_catalog_cache(
     serde_json::from_str::<CatalogResponse>(&content).ok()
 }
 
+fn get_sticker_catalog_cache_filename(
+    offset: u32,
+    limit: u32,
+    query: Option<&str>,
+    collection_id: Option<&str>,
+) -> String {
+    let q = query.unwrap_or("").trim().to_lowercase();
+    let c = collection_id.unwrap_or("").trim().to_lowercase();
+    let q_hash = simple_hash(&format!("{}:{}", q, c));
+    format!("stickers_o{}_l{}_q{:x}.json", offset, limit, q_hash)
+}
+
+pub fn save_sticker_catalog_cache(
+    cache_dir: &std::path::Path,
+    offset: u32,
+    limit: u32,
+    query: Option<&str>,
+    collection_id: Option<&str>,
+    catalog: &CatalogResponse,
+) -> Result<(), String> {
+    let file_path = cache_dir.join(get_sticker_catalog_cache_filename(offset, limit, query, collection_id));
+    let json = serde_json::to_string(catalog).map_err(|e| e.to_string())?;
+    fs::write(&file_path, json).map_err(|e| e.to_string())
+}
+
+pub fn load_sticker_catalog_cache(
+    cache_dir: &std::path::Path,
+    offset: u32,
+    limit: u32,
+    query: Option<&str>,
+    collection_id: Option<&str>,
+) -> Option<CatalogResponse> {
+    let file_path = cache_dir.join(get_sticker_catalog_cache_filename(offset, limit, query, collection_id));
+    if !file_path.exists() {
+        return None;
+    }
+    let content = fs::read_to_string(&file_path).ok()?;
+    serde_json::from_str::<CatalogResponse>(&content).ok()
+}
+
 #[tauri::command]
 pub fn clear_icon_cache() -> Result<(), String> {
     let cache_dir = get_cache_dir()?;
@@ -331,6 +459,16 @@ mod tests {
         assert!(
             !resp.collections.is_empty(),
             "Collections list should not be empty"
+        );
+    }
+
+    #[test]
+    fn test_fetch_sticker_collections_returns_valid_catalog() {
+        let resp = fetch_sticker_collections().unwrap();
+        assert!(resp.total > 0, "Should have sticker collections");
+        assert!(
+            !resp.collections.is_empty(),
+            "Sticker collections list should not be empty"
         );
     }
 }

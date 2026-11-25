@@ -107,5 +107,5 @@ export interface DesignOptions {
   sticker_tint_hex?: string | null;
 }
 
-export type MainTabType = "library" | "presets" | "designer" | "custom_color" | "import_image";
+export type MainTabType = "library" | "presets" | "designer" | "import_image";
 export type TabType = MainTabType;

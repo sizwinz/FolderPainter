@@ -7,8 +7,8 @@ interface CachedIconImageProps {
   className?: string;
 }
 
-const memoryBlobCache = new Map<string, string>();
-const inFlightRequests = new Map<string, Promise<string>>();
+export const memoryBlobCache = new Map<string, string>();
+export const inFlightRequests = new Map<string, Promise<string>>();
 
 let cacheInstancePromise: Promise<Cache | null> | null = null;
 function getCache(): Promise<Cache | null> {
@@ -21,7 +21,7 @@ function getCache(): Promise<Cache | null> {
   return cacheInstancePromise;
 }
 
-async function resolveIconUrl(src: string): Promise<string> {
+export async function resolveIconUrl(src: string): Promise<string> {
   if (memoryBlobCache.has(src)) {
     return memoryBlobCache.get(src)!;
   }

@@ -4,12 +4,14 @@ import {
   downloadAndConvertIcon,
   getDefaultFolderPreview,
   getFolderCurrentIconPreview,
+  getIconPreviewDataUrl,
   getUndoState,
   redoLast,
   restoreIcon,
   undoLast,
   undoSpecific,
 } from "../lib/invoke";
+import { memoryBlobCache, resolveIconUrl } from "../components/CachedIconImage";
 import type { UndoStateInfo } from "../lib/types";
 
 export interface StatusMessage {
@@ -105,14 +107,25 @@ export function useFolderIcon() {
   };
 
   const selectRemoteIcon = async (assetUrl: string) => {
-    setPreviewImageUrl(assetUrl);
+    const cachedBlob = memoryBlobCache.get(assetUrl);
+    setPreviewImageUrl(cachedBlob || assetUrl);
     setPreviewColorHex(null);
     setShowingFolderCurrentIcon(false);
     setIsPreparingIcon(true);
 
+    if (!cachedBlob) {
+      resolveIconUrl(assetUrl).then((resolved) => {
+        setPreviewImageUrl((prev) => (prev === assetUrl ? resolved : prev));
+      });
+    }
+
     try {
       const localIcoPath = await downloadAndConvertIcon(assetUrl);
       setSelectedIconPath(localIcoPath);
+      const previewDataUrl = await getIconPreviewDataUrl(localIcoPath).catch(() => null);
+      if (previewDataUrl) {
+        setPreviewImageUrl(previewDataUrl);
+      }
     } catch (err: unknown) {
       setStatusMessage({
         text: typeof err === "string" ? err : "Failed to prepare icon asset.",
@@ -120,6 +133,16 @@ export function useFolderIcon() {
       });
     } finally {
       setIsPreparingIcon(false);
+    }
+  };
+
+  const resetToDefaultIcon = async () => {
+    setSelectedIconPath(null);
+    setPreviewColorHex(null);
+    setShowingFolderCurrentIcon(Boolean(selectedFolder && !currentFolderIcon));
+    const defaultPreview = await getDefaultFolderPreview().catch(() => null);
+    if (defaultPreview) {
+      setPreviewImageUrl(defaultPreview);
     }
   };
 
@@ -175,7 +198,15 @@ export function useFolderIcon() {
 
     try {
       const count = await restoreIcon(selectedFolder, applyToSubfolders);
+      setSelectedIconPath(null);
+      setPreviewColorHex(null);
       await loadFolderIcon(selectedFolder, true);
+      const defaultPreview = await getDefaultFolderPreview().catch(() => null);
+      if (defaultPreview) {
+        setPreviewImageUrl(defaultPreview);
+        setFolderCurrentPreviewUrl(defaultPreview);
+      }
+      setShowingFolderCurrentIcon(true);
       await refreshUndoState();
       setStatusMessage({
         text:
@@ -298,6 +329,7 @@ export function useFolderIcon() {
     selectCustomImagePath,
     apply,
     restore,
+    resetToDefaultIcon,
     undo,
     redo,
     undoSpecificEntry,

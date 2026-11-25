@@ -1,11 +1,16 @@
-import React, { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { generateColorIcon } from "../lib/invoke";
 import { WindowsFolderIcon } from "./IconGrid";
 
 interface ColorWheelProps {
   onSelectIcon: (iconPath: string, previewUrl: string, hex: string) => void;
+  syncedHsl?: { hue: number; saturation: number; lightness: number } | null;
 }
+
+const DEFAULT_HUE = 44;
+const DEFAULT_SAT = 100;
+const DEFAULT_LIT = 73;
 
 function hslToHex(h: number, s: number, l: number): string {
   l /= 100;
@@ -20,13 +25,34 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
-export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
-  const [hue, setHue] = useState(210);
-  const [saturation, setSaturation] = useState(85);
-  const [lightness, setLightness] = useState(52);
+export const ColorWheel: React.FC<ColorWheelProps> = ({
+  onSelectIcon,
+  syncedHsl,
+}) => {
+  const [hue, setHue] = useState(DEFAULT_HUE);
+  const [saturation, setSaturation] = useState(DEFAULT_SAT);
+  const [lightness, setLightness] = useState(DEFAULT_LIT);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const hexColor = hslToHex(hue, saturation, lightness);
+  useEffect(() => {
+    if (!syncedHsl) return;
+    setHue(Math.round(syncedHsl.hue));
+    setSaturation(Math.round(syncedHsl.saturation * 100));
+    setLightness(Math.round(syncedHsl.lightness * 100));
+  }, [syncedHsl]);
+
+  const isDefaultWindows =
+    Math.abs(hue - DEFAULT_HUE) <= 2 &&
+    saturation >= 94 &&
+    Math.abs(lightness - DEFAULT_LIT) <= 2;
+
+  const hexColor = isDefaultWindows ? "#FFDA73" : hslToHex(hue, saturation, lightness);
+
+  const handleReset = () => {
+    setHue(DEFAULT_HUE);
+    setSaturation(DEFAULT_SAT);
+    setLightness(DEFAULT_LIT);
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -43,14 +69,25 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-xl">
-      <div>
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Custom HSL Color Engine
-        </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Tune hue, saturation, and lightness to create any custom folder shade.
-        </p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Custom HSL Color Engine
+          </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Tune hue, saturation, and lightness to create any custom folder shade.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          title="Reset HSL sliders to default Windows folder"
+          className="px-2.5 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-1 transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Reset</span>
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-xs">
@@ -60,7 +97,10 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
             className="w-24 h-24 rounded-2xl flex items-center justify-center border border-zinc-200/60 dark:border-zinc-800 shadow-inner"
             style={{ backgroundColor: `${hexColor}15` }}
           >
-            <WindowsFolderIcon color={hexColor} className="w-14 h-14 drop-shadow-md" />
+            <WindowsFolderIcon
+              color={isDefaultWindows ? "default" : hexColor}
+              className="w-14 h-14 drop-shadow-md"
+            />
           </div>
           <span className="text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300">
             {hexColor}
@@ -120,7 +160,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ onSelectIcon }) => {
             <input
               type="range"
               min="15"
-              max="85"
+              max="92"
               value={lightness}
               onChange={(e) => setLightness(Number(e.target.value))}
               className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-200 dark:bg-zinc-700"

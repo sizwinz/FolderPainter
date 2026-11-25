@@ -6,6 +6,7 @@ import type { PresetColor } from "../lib/types";
 interface IconGridProps {
   selectedIconPath: string | null;
   onSelectIcon: (iconPath: string, previewUrl: string, hex: string) => void;
+  onSyncHsl?: (hsl: { hue: number; saturation: number; lightness: number }) => void;
 }
 
 import defaultFolderPng from "../assets/windows_default_folder.png";
@@ -24,9 +25,12 @@ import whiteFolderPng from "../assets/windows11_folders/white.png";
 import yellowFolderPng from "../assets/windows11_folders/yellow.png";
 
 const FOLDER_COLOR_MAP: Record<string, string> = {
+  default: defaultFolderPng,
+  "#ffda73": defaultFolderPng,
+  "#ffca28": defaultFolderPng,
+  "#fdd835": defaultFolderPng,
   yellow: yellowFolderPng,
-  "#fdd835": yellowFolderPng,
-  "#ffe169": yellowFolderPng,
+  "#f7f700": yellowFolderPng,
   azure: azureFolderPng,
   "#039be5": azureFolderPng,
   "#0288d1": azureFolderPng,
@@ -84,7 +88,7 @@ function hexToFilter(hex?: string): string | undefined {
   const l = (max + min) / 2;
 
   if (delta === 0) {
-    return `grayscale(1) brightness(${Math.round((l / 0.6) * 100)}%)`;
+    return `grayscale(1) brightness(${Math.round((l / 0.725) * 100)}%)`;
   }
 
   const s = l <= 0.5 ? delta / (max + min) : delta / (2 - max - min);
@@ -97,9 +101,9 @@ function hexToFilter(hex?: string): string | undefined {
     h = 60 * (((rf - gf) / delta) + 4);
   }
 
-  const hueRotate = Math.round(h - 48);
-  const saturate = Math.round((s / 0.95) * 100);
-  const brightness = Math.round((l / 0.60) * 100);
+  const hueRotate = Math.round(h - 44);
+  const saturate = Math.round((s / 0.98) * 100);
+  const brightness = Math.round((l / 0.725) * 100);
 
   return `hue-rotate(${hueRotate}deg) saturate(${saturate}%) brightness(${brightness}%)`;
 }
@@ -111,7 +115,7 @@ export function WindowsFolderIcon({
   color?: string;
   className?: string;
 }) {
-  const key = color?.toLowerCase().trim() || "yellow";
+  const key = color?.toLowerCase().trim() || "default";
   const hasPreset = key in FOLDER_COLOR_MAP;
   const iconSrc = hasPreset ? FOLDER_COLOR_MAP[key] : defaultFolderPng;
   const filterStyle = !hasPreset && color?.startsWith("#") ? hexToFilter(color) : undefined;
@@ -130,6 +134,7 @@ export function WindowsFolderIcon({
 export const IconGrid: React.FC<IconGridProps> = ({
   selectedIconPath,
   onSelectIcon,
+  onSyncHsl,
 }) => {
   const [presets, setPresets] = useState<PresetColor[]>([]);
   const [loadingPreset, setLoadingPreset] = useState<string | null>(null);
@@ -142,6 +147,11 @@ export const IconGrid: React.FC<IconGridProps> = ({
 
   const handleSelectPreset = async (preset: PresetColor) => {
     setLoadingPreset(preset.hex);
+    onSyncHsl?.({
+      hue: preset.hue,
+      saturation: preset.saturation,
+      lightness: preset.lightness,
+    });
     try {
       const result = await generateColorIcon(
         preset.hue,
@@ -161,7 +171,7 @@ export const IconGrid: React.FC<IconGridProps> = ({
           Color Presets
         </h2>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Select a classic Windows-styled folder color to apply instantly.
+          Select a classic Windows folder preset or fine-tune any shade with the HSL sliders below.
         </p>
       </div>
 

@@ -125,15 +125,27 @@ pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResu
             None
         }
     } else if let Some(data_url) = &options.custom_cover_data_url {
-        let b64 = if let Some(idx) = data_url.find("base64,") {
-            &data_url[idx + 7..]
+        if data_url.starts_with("http://") || data_url.starts_with("https://") {
+            if let Ok(mut res) = crate::commands::icon_library::get_http_agent().get(data_url).call() {
+                if let Ok(bytes) = res.body_mut().read_to_vec() {
+                    image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else {
-            data_url.as_str()
-        };
-        if let Some(bytes) = base64_decode(b64) {
-            image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
-        } else {
-            None
+            let b64 = if let Some(idx) = data_url.find("base64,") {
+                &data_url[idx + 7..]
+            } else {
+                data_url.as_str()
+            };
+            if let Some(bytes) = base64_decode(b64) {
+                image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
+            } else {
+                None
+            }
         }
     } else {
         None
@@ -210,15 +222,27 @@ pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResu
             None
         }
     } else if let Some(data_url) = &options.sticker_data_url {
-        let b64 = if let Some(idx) = data_url.find("base64,") {
-            &data_url[idx + 7..]
+        if data_url.starts_with("http://") || data_url.starts_with("https://") {
+            if let Ok(mut res) = crate::commands::icon_library::get_http_agent().get(data_url).call() {
+                if let Ok(bytes) = res.body_mut().read_to_vec() {
+                    image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else {
-            data_url.as_str()
-        };
-        if let Some(bytes) = base64_decode(b64) {
-            image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
-        } else {
-            None
+            let b64 = if let Some(idx) = data_url.find("base64,") {
+                &data_url[idx + 7..]
+            } else {
+                data_url.as_str()
+            };
+            if let Some(bytes) = base64_decode(b64) {
+                image::load_from_memory(&bytes).map(|i| i.to_rgba8()).ok()
+            } else {
+                None
+            }
         }
     } else {
         None
@@ -305,7 +329,7 @@ pub fn generate_designed_icon(options: DesignOptions) -> Result<DesignedIconResu
 
     let opt_json = serde_json::to_string(&options).unwrap_or_default();
     let hash = simple_hash(&opt_json);
-    let output_path = base_dir.join(format!("design_{:x}.ico", hash));
+    let output_path = base_dir.join(format!("design_v2_{:x}.ico", hash));
 
     if !output_path.exists() {
         let ico_bytes = encode_multi_res_ico(&canvas)

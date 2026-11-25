@@ -1,5 +1,6 @@
 import React from "react";
-import { Check, RotateCcw, Undo, Redo, Loader2, AlertCircle, CheckCircle2, Info, Folder } from "lucide-react";
+import { Check, RotateCcw, Undo, Redo, Loader2, AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { WindowsFolderIcon } from "./IconGrid";
 import type { StatusMessage } from "../hooks/useFolderIcon";
 import type { UndoStateInfo } from "../lib/types";
 
@@ -66,15 +67,11 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         {/* Selected preview pill */}
         <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           <div
-            className="w-6 h-6 rounded-md flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shrink-0"
-            style={{ backgroundColor: previewColorHex ? `${previewColorHex}20` : undefined }}
+            className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
           >
-            <Folder
-              className="w-3.5 h-3.5"
-              style={{
-                fill: previewColorHex || "#9ca3af",
-                color: previewColorHex || "#9ca3af",
-              }}
+            <WindowsFolderIcon
+              className="w-4 h-4 shrink-0"
+              color={previewColorHex || undefined}
             />
           </div>
           <span className="truncate max-w-xs font-medium text-zinc-700 dark:text-zinc-300">

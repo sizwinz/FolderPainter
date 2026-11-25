@@ -99,6 +99,24 @@ export async function fetchIcons(
   });
 }
 
+export async function fetchStickerCollections(): Promise<CollectionsResponse> {
+  return await invoke<CollectionsResponse>("fetch_sticker_collections");
+}
+
+export async function fetchStickers(
+  offset: number,
+  limit: number,
+  query?: string,
+  collectionId?: string
+): Promise<CatalogResponse> {
+  return await invoke<CatalogResponse>("fetch_stickers", {
+    offset,
+    limit,
+    query: query || null,
+    collectionId: collectionId || null,
+  });
+}
+
 export async function downloadAndConvertIcon(url: string): Promise<string> {
   return await invoke<string>("download_and_convert_icon", {
     url,

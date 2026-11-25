@@ -17,6 +17,13 @@ pub struct PresetColor {
 pub fn list_preset_colors() -> Vec<PresetColor> {
     vec![
         PresetColor {
+            name: "Default (Windows)".to_string(),
+            hex: "#FFDA73".to_string(),
+            hue: 44.0,
+            saturation: 1.0,
+            lightness: 0.73,
+        },
+        PresetColor {
             name: "Crimson Red".to_string(),
             hex: "#E53935".to_string(),
             hue: 356.0,
@@ -29,13 +36,6 @@ pub fn list_preset_colors() -> Vec<PresetColor> {
             hue: 33.0,
             saturation: 1.0,
             lightness: 0.49,
-        },
-        PresetColor {
-            name: "Sunflower Yellow".to_string(),
-            hex: "#FDD835".to_string(),
-            hue: 48.0,
-            saturation: 0.98,
-            lightness: 0.60,
         },
         PresetColor {
             name: "Emerald Green".to_string(),
@@ -152,12 +152,23 @@ pub const PNG_VIOLET: &[u8] = include_bytes!("../../assets/windows11_folders/vio
 pub const ICO_WHITE: &[u8] = include_bytes!("../../assets/windows11_folders/white.ico");
 pub const PNG_WHITE: &[u8] = include_bytes!("../../assets/windows11_folders/white.png");
 
+pub fn is_default_windows_color(hue: f32, sat: f32, lit: f32) -> bool {
+    let h = hue.clamp(0.0, 360.0);
+    let s = sat.clamp(0.0, 1.0);
+    let l = lit.clamp(0.0, 1.0);
+    (h - 44.0).abs() <= 2.5 && s >= 0.94 && (l - 0.725).abs() <= 0.05
+}
+
 pub fn get_authentic_preset(hue: f32, sat: f32, lit: f32) -> Option<(&'static [u8], &'static [u8])> {
+    if is_default_windows_color(hue, sat, lit) {
+        return None;
+    }
+
     let h_int = (hue.clamp(0.0, 360.0) * 10.0).round() as u32;
     let s_int = (sat.clamp(0.0, 1.0) * 100.0).round() as u32;
     let l_int = (lit.clamp(0.0, 1.0) * 100.0).round() as u32;
 
-    if (h_int >= 460 && h_int <= 500) && s_int >= 90 && l_int >= 55 {
+    if (h_int >= 570 && h_int <= 630) && s_int >= 90 && l_int >= 42 && l_int <= 56 {
         return Some((ICO_YELLOW, PNG_YELLOW));
     }
     if (h_int >= 1950 && h_int <= 2040) && s_int >= 90 && l_int >= 40 && l_int <= 50 {
@@ -223,8 +234,25 @@ pub fn generate_color_icon(
     let s_int = (saturation.clamp(0.0, 1.0) * 100.0).round() as u32;
     let l_int = (lightness.clamp(0.0, 1.0) * 100.0).round() as u32;
 
-    let filename = format!("folder_h{}_s{}_l{}.ico", h_int, s_int, l_int);
+    let filename = format!("folder_v2_h{}_s{}_l{}.ico", h_int, s_int, l_int);
     let output_path = base_dir.join(filename);
+
+    if is_default_windows_color(hue, saturation, lightness) {
+        let img256 = image::load_from_memory(DEFAULT_WINDOWS_FOLDER_PNG)
+            .map_err(|e| format!("Failed to decode default folder PNG: {}", e))?
+            .to_rgba8();
+        if !output_path.exists() {
+            let ico_bytes = encode_multi_res_ico(&img256)
+                .map_err(|e| format!("Failed to encode ICO file: {}", e))?;
+            fs::write(&output_path, ico_bytes)
+                .map_err(|e| format!("Failed to write icon file: {}", e))?;
+        }
+        let b64 = base64_encode(DEFAULT_WINDOWS_FOLDER_PNG);
+        return Ok(GeneratedIconResult {
+            icon_path: output_path.to_string_lossy().to_string(),
+            preview_data_url: format!("data:image/png;base64,{}", b64),
+        });
+    }
 
     if let Some((ico_bytes, png_bytes)) = get_authentic_preset(hue, saturation, lightness) {
         if !output_path.exists() {
@@ -331,16 +359,20 @@ fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
 }
 
 pub fn tint_windows_folder(target_hue: f32, target_sat: f32, target_lit: f32) -> RgbaImage {
-    // If it matches an authentic preset exactly, return its decoded RGBA image directly
+    let default_img = image::load_from_memory(DEFAULT_WINDOWS_FOLDER_PNG)
+        .expect("Valid embedded windows_default_folder.png")
+        .to_rgba8();
+
+    if is_default_windows_color(target_hue, target_sat, target_lit) {
+        return default_img;
+    }
+
+    // If it matches a curated FolderIco color preset, return its decoded RGBA image directly
     if let Some((_, png_bytes)) = get_authentic_preset(target_hue, target_sat, target_lit) {
         if let Ok(img) = image::load_from_memory(png_bytes) {
             return img.to_rgba8();
         }
     }
-
-    let default_img = image::load_from_memory(DEFAULT_WINDOWS_FOLDER_PNG)
-        .expect("Valid embedded windows_default_folder.png")
-        .to_rgba8();
 
     let (width, height) = default_img.dimensions();
     let mut tinted = RgbaImage::new(width, height);
@@ -365,20 +397,20 @@ pub fn tint_windows_folder(target_hue: f32, target_sat: f32, target_lit: f32) ->
                 continue;
             }
 
-            // Authentic folder body tinting
-            let hue_delta = src_h - 48.0;
+            // Authentic Windows 11 folder body tinting anchored to (44 deg, 0.98, 0.725)
+            let hue_delta = src_h - 44.0;
             let new_h = (h_clamped + hue_delta).rem_euclid(360.0);
 
             let new_s = if s_clamped == 0.0 {
                 0.0
             } else {
-                (src_s * (s_clamped / 0.95)).clamp(0.0, 1.0)
+                (src_s * (s_clamped / 0.98)).clamp(0.0, 1.0)
             };
 
-            let new_l = if l_clamped <= 0.60 {
-                src_l * (l_clamped / 0.60)
+            let new_l = if l_clamped <= 0.725 {
+                src_l * (l_clamped / 0.725)
             } else {
-                src_l + (1.0 - src_l) * ((l_clamped - 0.60) / 0.40)
+                src_l + (1.0 - src_l) * ((l_clamped - 0.725) / 0.275)
             }
             .clamp(0.0, 1.0);
 
@@ -589,5 +621,41 @@ mod tests {
         assert_eq!(presets.len(), 13, "Should have 13 preset colors");
 
         let _ = fs::remove_file(icon_path);
+    }
+
+    #[test]
+    fn test_default_windows_folder_uses_authentic_windows_icon() {
+        let preview_url = get_default_folder_preview().expect("default preview");
+        let b64 = preview_url.split(',').nth(1).unwrap();
+        let bytes = base64_decode(b64).expect("valid base64");
+        let default_img = image::load_from_memory(&bytes).expect("valid png").to_rgba8();
+
+        let center = default_img.get_pixel(128, 128);
+        assert_eq!(center[3], 255, "Center pixel must be opaque");
+        assert!(
+            center[0] >= 245 && (200..=235).contains(&center[1]) && center[2] >= 80,
+            "Default folder preview must be authentic Windows golden-amber (expected R>=245, G 200..235, B>=80; got {:?})",
+            center
+        );
+
+        let presets = list_preset_colors();
+        let default_preset = &presets[0];
+        assert_eq!(default_preset.name, "Default (Windows)");
+        let res = generate_color_icon(
+            default_preset.hue,
+            default_preset.saturation,
+            default_preset.lightness,
+        )
+        .expect("default preset generation");
+        let p_b64 = res.preview_data_url.split(',').nth(1).unwrap();
+        let p_bytes = base64_decode(p_b64).expect("valid preset base64");
+        let preset_img = image::load_from_memory(&p_bytes).expect("valid preset png").to_rgba8();
+        let preset_center = preset_img.get_pixel(128, 128);
+        assert!(
+            preset_center[0] >= 245 && (200..=235).contains(&preset_center[1]) && preset_center[2] >= 80,
+            "Default preset must generate authentic Windows folder, got {:?}",
+            preset_center
+        );
+        let _ = fs::remove_file(res.icon_path);
     }
 }
